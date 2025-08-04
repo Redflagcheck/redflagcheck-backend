@@ -3,4 +3,4 @@ psycopg2-binary
 dj-database-url
 python-dotenv
 gunicorn
-pip install whitenoise
+whitenoise
