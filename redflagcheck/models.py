@@ -17,9 +17,10 @@ class Analysis(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
     context = models.TextField(blank=True, null=True)
-    screenshot_url = models.URLField(blank=True, null=True)
+    screenshot_url = models.TextField(blank=True, null=True)
     result = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Analysis {self.analysis_id}"
+

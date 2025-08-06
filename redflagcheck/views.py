@@ -1,13 +1,12 @@
-from django.shortcuts import render
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import User, Analysis
+import base64
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.shortcuts import render
 from rest_framework.parsers import MultiPartParser, FormParser
-
-
-# Create your views here.
-
 from django.http import HttpResponse
 
 def home(request):
@@ -18,23 +17,28 @@ def home(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def form_submit(request):
-    # Ondersteunt nu ook file uploads!
     email = request.data.get('email')
     name = request.data.get('name', '')
     message = request.data.get('message')
     context = request.data.get('context', '')
 
-    # Bestand ophalen uit FILES (optioneel)
     screenshot_file = request.FILES.get('screenshot')
     screenshot_url = None
 
-    # Bestand opslaan als het bestaat
     if screenshot_file:
-        from django.core.files.storage import default_storage
         path = default_storage.save('uploads/' + screenshot_file.name, screenshot_file)
         screenshot_url = default_storage.url(path)
     else:
-        screenshot_url = request.data.get('screenshot_url', '')
+        base64_data = request.data.get('screenshot_url', '')
+        if base64_data and base64_data.startswith('data:image'):
+            format, imgstr = base64_data.split(';base64,')
+            ext = format.split('/')[-1]
+            file_name = f"uploads/base64_{email.replace('@','_')}.{ext}"
+            data = ContentFile(base64.b64decode(imgstr), name=file_name)
+            path = default_storage.save(file_name, data)
+            screenshot_url = default_storage.url(path)
+        else:
+            screenshot_url = ''
 
     if not email or not message:
         return Response({'status': 'error', 'message': 'Email en bericht zijn verplicht.'}, status=400)

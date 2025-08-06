@@ -3,6 +3,7 @@ import dj_database_url
 from dotenv import load_dotenv
 load_dotenv()
 
+
 """
 Django settings for backend project.
 
@@ -134,5 +135,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://redflagcheck.nl",
 ]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
