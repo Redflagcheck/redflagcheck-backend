@@ -8,15 +8,10 @@ from django.core.files.storage import default_storage
 from django.shortcuts import render
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import HttpResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from .models import User
 import logging
 
 def home(request):
     return HttpResponse("RedFlagCheck werkt!")
-
 
 
 @api_view(['POST'])
@@ -59,7 +54,6 @@ def form_submit(request):
     analysis = Analysis.objects.create(
         user=user,
         user_email=email,
-        name=name,
         message=message,
         context=context,
         screenshot_url=screenshot_url,
@@ -78,8 +72,6 @@ def form_submit(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def payment_success(request):
-    import logging
-
     logging.warning("==== PAYMENT SUCCESS DEBUG START ====")
     logging.warning(f"RAW REQUEST DATA: {request.data}")
 
@@ -138,4 +130,3 @@ def payment_success(request):
 
     logging.warning("==== PAYMENT SUCCESS DEBUG END ====")
     return Response({'success': True})
-
