@@ -1,9 +1,54 @@
+# CORE DJANGO
 Django>=4.2
+
+# DATABASE
 psycopg2-binary
 dj-database-url
 python-dotenv
+
+# SERVER / DEPLOYMENT
 gunicorn
 whitenoise
+
+# REST API & SERIALIZERS
 djangorestframework
 django-cors-headers
+
+# MEDIA & IMAGE PROCESSING
+Pillow
+python-magic
+
+# OCR / TEKST-UITLEZEN
+pytesseract
+# tesseract-ocr (los installeren op server, niet via pip!)
+
+# BACKGROUND JOBS / TASKS
+celery
+redis
+
+# AI / GPT-INTERGRATIE
+openai
+
+# BEVEILIGING / BEST PRACTICES
+django-environ
+django-axes
+django-sslserver
+
+# EMAIL
+sendgrid
+
+# TESTEN & DEBUGGEN
+pytest
+pytest-django
+ipython
+
+# LOGGING & MONITORING
+sentry-sdk
+
+# FRONTEND/API HELPER
+django-filter
+drf-yasg
+
+# CROSS-PROJECT BEST PRACTICE
+dja
 
