@@ -73,11 +73,11 @@ def payment_success(request):
         return Response({'success': False, 'error': 'Invalid amount'}, status=400)
 
     credits = 0
-    if amount == 1:
+    if abs(amount - 1) < 0.01:
         credits = 1
-    elif amount == 1.9:
+    elif abs(amount - 1.9) < 0.01:
         credits = 2
-    elif amount == 4.5:
+    elif abs(amount - 4.5) < 0.01:
         credits = 5
 
     if not email or credits == 0:
@@ -90,3 +90,4 @@ def payment_success(request):
         return Response({'success': True})
     except User.DoesNotExist:
         return Response({'success': False, 'error': 'User not found'}, status=404)
+
