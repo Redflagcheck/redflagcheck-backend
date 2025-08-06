@@ -9,10 +9,17 @@ from django.shortcuts import render
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import HttpResponse
 import logging
+from django.utils.crypto import get_random_string
+
 
 def home(request):
     return HttpResponse("RedFlagCheck werkt!")
 
+def generate_unique_token():
+    while True:
+        token = get_random_string(48)
+        if not User.objects.filter(token=token).exists():
+            return token
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -100,33 +107,25 @@ def payment_success(request):
         logging.error(f"Invalid data: email={email} credits={credits}")
         return Response({'success': False, 'error': 'Invalid data'}, status=400)
 
-    try:
-        emails = list(User.objects.values_list('email', flat=True))
-        logging.warning(f"Alle e-mails in database: {emails}")
-    except Exception as ex:
-        logging.error(f"Error ophalen e-mails uit database: {ex}")
-
     email_normalized = (email or "").strip().lower()
-    logging.warning(f"Email uit request: '{email}' (genormaliseerd: '{email_normalized}')")
-
     try:
-        logging.warning(f"Start user lookup met email__iexact='{email_normalized}'")
-        user = User.objects.get(email__iexact=email_normalized)
-        logging.warning(f"User gevonden: {user.email} - huidig saldo: {user.balance}")
-    except User.DoesNotExist:
-        logging.error(f"User niet gevonden voor: '{email_normalized}'")
-        return Response({'success': False, 'error': 'User not found'}, status=404)
+        user, created = User.objects.get_or_create(
+            email=email_normalized,
+            defaults={
+                "token": generate_unique_token(),
+                "balance": credits,
+                "email_verified": False
+            }
+        )
+
+        if not created:
+            user.balance += credits
+            user.save()
+
+        logging.warning(f"User {email_normalized} → saldo: {user.balance}, token: {user.token}")
+        logging.warning("==== PAYMENT SUCCESS DEBUG END ====")
+        return Response({'success': True, 'token': user.token})
+
     except Exception as ex:
-        logging.error(f"Onverwachte fout bij user lookup: {ex}")
+        logging.error(f"Onverwachte fout bij betaling: {ex}")
         return Response({'success': False, 'error': f'Unexpected error: {ex}'}, status=500)
-
-    try:
-        user.balance += credits
-        user.save()
-        logging.warning(f"Saldo opgehoogd: nieuw saldo = {user.balance}")
-    except Exception as ex:
-        logging.error(f"Fout bij updaten saldo: {ex}")
-        return Response({'success': False, 'error': f'Balance update failed: {ex}'}, status=500)
-
-    logging.warning("==== PAYMENT SUCCESS DEBUG END ====")
-    return Response({'success': True})
