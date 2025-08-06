@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'redflagcheck',
     'django_extensions',
     'corsheaders',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
