@@ -23,13 +23,18 @@ def form_submit(request):
     context = request.data.get('context', '')
 
     screenshot_file = request.FILES.get('screenshot')
+    base64_data = request.data.get('screenshot_url', '')
+
+    # CHECK KOMT ALTIJD VOOR HET OPSLAAN!
+    if not email or (not message and not screenshot_file and not (base64_data and base64_data.startswith('data:image'))):
+        return Response({'status': 'error', 'message': 'E-mail en minimaal één van bericht of screenshot zijn verplicht.'}, status=400)
+
     screenshot_url = None
 
     if screenshot_file:
         path = default_storage.save('uploads/' + screenshot_file.name, screenshot_file)
         screenshot_url = default_storage.url(path)
     else:
-        base64_data = request.data.get('screenshot_url', '')
         if base64_data and base64_data.startswith('data:image'):
             format, imgstr = base64_data.split(';base64,')
             ext = format.split('/')[-1]
@@ -39,9 +44,6 @@ def form_submit(request):
             screenshot_url = default_storage.url(path)
         else:
             screenshot_url = ''
-
-    if not email or not message:
-        return Response({'status': 'error', 'message': 'Email en bericht zijn verplicht.'}, status=400)
 
     user, _ = User.objects.get_or_create(email=email, defaults={'name': name})
 
