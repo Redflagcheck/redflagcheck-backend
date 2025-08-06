@@ -29,34 +29,47 @@ def form_submit(request):
 
     screenshot_file = request.FILES.get('screenshot')
     base64_data = request.data.get('screenshot_url', '')
+    ocr = request.data.get('ocr', '')
+    question1 = request.data.get('question1', '')
+    answer1 = request.data.get('answer1', '')
+    question2 = request.data.get('question2', '')
+    answer2 = request.data.get('answer2', '')
+    result = request.data.get('result', '')
+    gpt_result_html = request.data.get('gpt_result_html', '')
 
-    # CHECK KOMT ALTIJD VOOR HET OPSLAAN!
     if not email or (not message and not screenshot_file and not (base64_data and base64_data.startswith('data:image'))):
         return Response({'status': 'error', 'message': 'E-mail en minimaal één van bericht of screenshot zijn verplicht.'}, status=400)
 
     screenshot_url = None
-
     if screenshot_file:
         path = default_storage.save('uploads/' + screenshot_file.name, screenshot_file)
         screenshot_url = default_storage.url(path)
+    elif base64_data and base64_data.startswith('data:image'):
+        format, imgstr = base64_data.split(';base64,')
+        ext = format.split('/')[-1]
+        file_name = f"uploads/base64_{email.replace('@','_')}.{ext}"
+        data = ContentFile(base64.b64decode(imgstr), name=file_name)
+        path = default_storage.save(file_name, data)
+        screenshot_url = default_storage.url(path)
     else:
-        if base64_data and base64_data.startswith('data:image'):
-            format, imgstr = base64_data.split(';base64,')
-            ext = format.split('/')[-1]
-            file_name = f"uploads/base64_{email.replace('@','_')}.{ext}"
-            data = ContentFile(base64.b64decode(imgstr), name=file_name)
-            path = default_storage.save(file_name, data)
-            screenshot_url = default_storage.url(path)
-        else:
-            screenshot_url = ''
+        screenshot_url = ''
 
     user, _ = User.objects.get_or_create(email=email, defaults={'name': name})
 
     analysis = Analysis.objects.create(
         user=user,
+        user_email=email,
+        name=name,
         message=message,
         context=context,
-        screenshot_url=screenshot_url
+        screenshot_url=screenshot_url,
+        ocr=ocr,
+        question1=question1,
+        answer1=answer1,
+        question2=question2,
+        answer2=answer2,
+        result=result,
+        gpt_result_html=gpt_result_html
     )
 
     return Response({'status': 'success', 'analysis_id': analysis.analysis_id})
