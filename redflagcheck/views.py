@@ -65,10 +65,9 @@ def form_submit(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def payment_success(request):
+    import logging
     email = request.data.get('email')
     amount = request.data.get('amount')
-
-    logging.warning(f"Received payment: email={email}, amount={amount}")
 
     try:
         amount = float(amount)
@@ -84,17 +83,23 @@ def payment_success(request):
     elif abs(amount - 4.5) < 0.01:
         credits = 5
 
-    logging.warning(f"Calculated credits: {credits}")
-
     if not email or credits == 0:
         logging.error("Invalid data (missing email or credits = 0)")
         return Response({'success': False, 'error': 'Invalid data'}, status=400)
 
+    # LOG ALLE EMAILS EN GENORMALISEER DE INPUT
+    emails = list(User.objects.values_list('email', flat=True))
+    logging.warning(f"Alle e-mails in database: {emails}")
+    email_normalized = (email or "").strip().lower()
+    logging.warning(f"Email uit request: {email} (genormaliseerd: {email_normalized})")
+
     try:
-        user = User.objects.get(email=email)
+        # Zoek user met case-insensitive match
+        user = User.objects.get(email__iexact=email_normalized)
         user.balance += credits
         user.save()
+        logging.warning(f"Succes! Nieuw saldo: {user.balance}")
         return Response({'success': True})
     except User.DoesNotExist:
-        logging.error("User not found")
+        logging.error(f"User niet gevonden voor: {email_normalized}")
         return Response({'success': False, 'error': 'User not found'}, status=404)
