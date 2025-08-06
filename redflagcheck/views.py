@@ -109,16 +109,22 @@ def payment_success(request):
 
     email_normalized = (email or "").strip().lower()
     try:
+        token_to_use = generate_unique_token()
         user, created = User.objects.get_or_create(
             email=email_normalized,
             defaults={
-                "token": generate_unique_token(),
+                "token": token_to_use,
                 "balance": credits,
-                "email_verified": False
+                "email_verified": False,
+                "password_hash": "",  # leeg wachtwoord toegestaan
             }
         )
 
-        if not created:
+        if created:
+            logging.warning(f"Nieuwe gebruiker aangemaakt: {email_normalized} met token {token_to_use}")
+        else:
+            if not user.token:
+                user.token = token_to_use
             user.balance += credits
             user.save()
 
