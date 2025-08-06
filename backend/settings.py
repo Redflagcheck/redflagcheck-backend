@@ -133,6 +133,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
     "https://redflagcheck.nl",
+    "https://redflagcheck-backend-y06m.onrender.com",
 ]
 
 MEDIA_URL = '/media/'
