@@ -8,6 +8,10 @@ from django.core.files.storage import default_storage
 from django.shortcuts import render
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import HttpResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from .models import User
 
 def home(request):
     return HttpResponse("RedFlagCheck werkt!")
@@ -55,3 +59,34 @@ def form_submit(request):
     )
 
     return Response({'status': 'success', 'analysis_id': analysis.analysis_id})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def payment_success(request):
+    email = request.data.get('email')
+    amount = request.data.get('amount')
+
+    try:
+        amount = float(amount)
+    except Exception:
+        return Response({'success': False, 'error': 'Invalid amount'}, status=400)
+
+    credits = 0
+    if amount == 1:
+        credits = 1
+    elif amount == 1.9:
+        credits = 2
+    elif amount == 4.5:
+        credits = 5
+
+    if not email or credits == 0:
+        return Response({'success': False, 'error': 'Invalid data'}, status=400)
+
+    try:
+        user = User.objects.get(email=email)
+        user.balance += credits
+        user.save()
+        return Response({'success': True})
+    except User.DoesNotExist:
+        return Response({'success': False, 'error': 'User not found'}, status=404)
