@@ -2,7 +2,8 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 load_dotenv()
-
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 """
 Django settings for backend project.
@@ -31,7 +32,7 @@ SECRET_KEY = 'django-insecure-&ix!jqtj)$k#tq2#5_k_ej_6(1ic1!0ytxa_d--(onk1_u8w(1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
 
 
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'redflagcheck',
+    'django_extensions',
     'corsheaders',
 ]
 
