@@ -12,6 +12,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import User
+import logging
 
 def home(request):
     return HttpResponse("RedFlagCheck werkt!")
@@ -67,9 +68,12 @@ def payment_success(request):
     email = request.data.get('email')
     amount = request.data.get('amount')
 
+    logging.warning(f"Received payment: email={email}, amount={amount}")
+
     try:
         amount = float(amount)
     except Exception:
+        logging.error("Invalid amount")
         return Response({'success': False, 'error': 'Invalid amount'}, status=400)
 
     credits = 0
@@ -80,7 +84,10 @@ def payment_success(request):
     elif abs(amount - 4.5) < 0.01:
         credits = 5
 
+    logging.warning(f"Calculated credits: {credits}")
+
     if not email or credits == 0:
+        logging.error("Invalid data (missing email or credits = 0)")
         return Response({'success': False, 'error': 'Invalid data'}, status=400)
 
     try:
@@ -89,5 +96,5 @@ def payment_success(request):
         user.save()
         return Response({'success': True})
     except User.DoesNotExist:
+        logging.error("User not found")
         return Response({'success': False, 'error': 'User not found'}, status=404)
-
