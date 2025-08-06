@@ -20,13 +20,13 @@ python-magic
 
 # OCR / TEKST-UITLEZEN
 pytesseract
-# tesseract-ocr (los installeren op server, niet via pip!)
+# Opmerking: tesseract-ocr moet als systeempakket op de server staan (niet via pip)
 
 # BACKGROUND JOBS / TASKS
 celery
 redis
 
-# AI / GPT-INTERGRATIE
+# AI / GPT-INTEGRATIE
 openai
 
 # BEVEILIGING / BEST PRACTICES
@@ -50,5 +50,5 @@ django-filter
 drf-yasg
 
 # CROSS-PROJECT BEST PRACTICE
-dja
+django-extensions
 
