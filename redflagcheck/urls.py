@@ -1,7 +1,10 @@
+# redflagcheck/urls.py
+
 from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.home, name='home'),
-    path('api/form_submit/', views.form_submit, name='form_submit'),
+    path('save_formdata', views.form_submit, name='save_formdata'),  # ✅ correcte koppeling
+    # eventueel later:
+    # path('email_status', views.email_status, name='email_status')
 ]
