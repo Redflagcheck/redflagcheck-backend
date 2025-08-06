@@ -66,40 +66,63 @@ def form_submit(request):
 @permission_classes([AllowAny])
 def payment_success(request):
     import logging
+
+    logging.warning("==== PAYMENT SUCCESS DEBUG START ====")
+    logging.warning(f"RAW REQUEST DATA: {request.data}")
+
     email = request.data.get('email')
     amount = request.data.get('amount')
+    token = request.data.get('token', None)
+    logging.warning(f"Request received - email: {email}, amount: {amount}, token: {token}")
 
     try:
-        amount = float(amount)
-    except Exception:
-        logging.error("Invalid amount")
+        amount_float = float(amount)
+        logging.warning(f"Amount as float: {amount_float}")
+    except Exception as ex:
+        logging.error(f"Invalid amount: {amount} ({ex})")
         return Response({'success': False, 'error': 'Invalid amount'}, status=400)
 
     credits = 0
-    if abs(amount - 1) < 0.01:
+    if abs(amount_float - 1) < 0.01:
         credits = 1
-    elif abs(amount - 1.9) < 0.01:
+    elif abs(amount_float - 1.9) < 0.01:
         credits = 2
-    elif abs(amount - 4.5) < 0.01:
+    elif abs(amount_float - 4.5) < 0.01:
         credits = 5
+    logging.warning(f"Calculated credits: {credits} for amount: {amount_float}")
 
     if not email or credits == 0:
-        logging.error("Invalid data (missing email or credits = 0)")
+        logging.error(f"Invalid data: email={email} credits={credits}")
         return Response({'success': False, 'error': 'Invalid data'}, status=400)
 
-    # LOG ALLE EMAILS EN GENORMALISEER DE INPUT
-    emails = list(User.objects.values_list('email', flat=True))
-    logging.warning(f"Alle e-mails in database: {emails}")
+    try:
+        emails = list(User.objects.values_list('email', flat=True))
+        logging.warning(f"Alle e-mails in database: {emails}")
+    except Exception as ex:
+        logging.error(f"Error ophalen e-mails uit database: {ex}")
+
     email_normalized = (email or "").strip().lower()
-    logging.warning(f"Email uit request: {email} (genormaliseerd: {email_normalized})")
+    logging.warning(f"Email uit request: '{email}' (genormaliseerd: '{email_normalized}')")
 
     try:
-        # Zoek user met case-insensitive match
+        logging.warning(f"Start user lookup met email__iexact='{email_normalized}'")
         user = User.objects.get(email__iexact=email_normalized)
+        logging.warning(f"User gevonden: {user.email} - huidig saldo: {user.balance}")
+    except User.DoesNotExist:
+        logging.error(f"User niet gevonden voor: '{email_normalized}'")
+        return Response({'success': False, 'error': 'User not found'}, status=404)
+    except Exception as ex:
+        logging.error(f"Onverwachte fout bij user lookup: {ex}")
+        return Response({'success': False, 'error': f'Unexpected error: {ex}'}, status=500)
+
+    try:
         user.balance += credits
         user.save()
-        logging.warning(f"Succes! Nieuw saldo: {user.balance}")
-        return Response({'success': True})
-    except User.DoesNotExist:
-        logging.error(f"User niet gevonden voor: {email_normalized}")
-        return Response({'success': False, 'error': 'User not found'}, status=404)
+        logging.warning(f"Saldo opgehoogd: nieuw saldo = {user.balance}")
+    except Exception as ex:
+        logging.error(f"Fout bij updaten saldo: {ex}")
+        return Response({'success': False, 'error': f'Balance update failed: {ex}'}, status=500)
+
+    logging.warning("==== PAYMENT SUCCESS DEBUG END ====")
+    return Response({'success': True})
+
