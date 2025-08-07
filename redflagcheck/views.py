@@ -10,6 +10,10 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import HttpResponse
 import logging
 from django.utils.crypto import get_random_string
+from redflagcheck.utils.magic_links import send_magic_link
+from django.utils import timezone
+
+
 
 
 def home(request):
@@ -116,12 +120,14 @@ def payment_success(request):
                 "token": token_to_use,
                 "balance": credits,
                 "email_verified": False,
-                "password_hash": "",  # leeg wachtwoord toegestaan
+                "password_hash": "",
             }
         )
 
         if created:
             logging.warning(f"Nieuwe gebruiker aangemaakt: {email_normalized} met token {token_to_use}")
+            from redflagcheck.utils.magic_links import send_magic_link
+            send_magic_link(user.email, token_to_use)
         else:
             if not user.token:
                 user.token = token_to_use
@@ -158,25 +164,48 @@ def verify_token(request):
         return Response({'success': False, 'error': 'Invalid token'}, status=404)
     
 
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def request_magic_link(request):
+def check_verification_status(request):
     token = request.data.get("token", "").strip()
     if not token:
         return Response({"success": False, "error": "Token ontbreekt"}, status=400)
-
     try:
         user = User.objects.get(token=token)
         if user.email_verified:
-            return Response({"success": False, "error": "E-mail is al geverifieerd"}, status=400)
+            return Response({"success": True, "status": "verified", "email": user.email})
+        elif user.magic_code and user.magic_code_expiry and user.magic_code_expiry > timezone.now():
+            return Response({"success": True, "status": "pending", "email": user.email,
+                            "message": "E-mail is nog niet bevestigd. We hebben je een link gestuurd."})
+        else:
+            return Response({"success": True, "status": "expired", "email": user.email,
+                            "message": "Je bevestigingslink is verlopen. Vraag een nieuwe aan."})
+    except User.DoesNotExist:
+        return Response({"success": False, "error": "Token ongeldig of gebruiker niet gevonden."}, status=404)
 
-        from redflagcheck.utils.magic_links import send_magic_link
-        send_magic_link(user.email, token)
-
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def update_email(request):
+    token = request.data.get("token", "").strip()
+    new_email = request.data.get("new_email", "").strip().lower()
+    if not token or not new_email:
+        return Response({"success": False, "error": "Token en/of nieuw e-mailadres ontbreekt"}, status=400)
+    try:
+        user = User.objects.get(token=token)
+        if user.email_verified:
+            return Response({"success": False, "error": "E-mailadres kan niet meer aangepast worden nadat het is geverifieerd."}, status=400)
+        # Check of email al bestaat bij andere user
+        if User.objects.filter(email=new_email).exclude(token=token).exists():
+            return Response({"success": False, "error": "Dit e-mailadres is al in gebruik."}, status=400)
+        user.email = new_email
+        user.email_verified = False
+        user.save()
+        send_magic_link(user.email, user.token)
         return Response({"success": True})
     except User.DoesNotExist:
-        return Response({"success": False, "error": "Gebruiker niet gevonden"}, status=404)
-    
+        return Response({"success": False, "error": "Token ongeldig of gebruiker niet gevonden."}, status=404)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -184,15 +213,11 @@ def resend_magic_link(request):
     token = request.data.get("token", "").strip()
     if not token:
         return Response({"success": False, "error": "Token ontbreekt"}, status=400)
-
     try:
         user = User.objects.get(token=token)
         if user.email_verified:
             return Response({"success": False, "error": "E-mail is al geverifieerd"}, status=400)
-
-        from redflagcheck.utils.magic_links import send_magic_link
         send_magic_link(user.email, token)
-
         return Response({"success": True})
     except User.DoesNotExist:
         return Response({"success": False, "error": "Gebruiker niet gevonden"}, status=404)

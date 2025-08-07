@@ -6,6 +6,7 @@ urlpatterns = [
     path('payment_success/', views.payment_success, name='payment_success'),
     path('verify_token/', views.verify_token),
     path('request_magic_link/', views.request_magic_link),
-    path('resend_magic_link/', views.resend_magic_link),
-
+    path('check_verification_status/', views.check_verification_status, name='check_verification_status'),
+    path('update_email/', views.update_email, name='update_email'),
+    path('resend_magic_link/', views.resend_magic_link, name='resend_magic_link'),
 ]
