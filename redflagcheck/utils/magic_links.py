@@ -1,5 +1,6 @@
 import smtplib
 from email.message import EmailMessage
+import logging
 
 SMTP_HOST = "smtp.transip.email"
 SMTP_PORT = 465
@@ -18,8 +19,10 @@ def send_magic_link(to_email, token):
     msg.set_content(body)
 
     try:
+        logging.warning(f"📧 Versturen magic link naar: {to_email}")
         with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(msg)
+        logging.warning(f"✅ Magic link succesvol verzonden naar: {to_email}")
     except Exception as e:
-        print(f"Fout bij verzenden e-mail: {e}")
+        logging.error(f"❌ Fout bij verzenden e-mail naar {to_email}: {e}")
