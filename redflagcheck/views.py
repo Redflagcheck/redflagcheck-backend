@@ -123,6 +123,10 @@ def payment_success(request):
             }
         )
 
+        
+        logging.warning(f"[DEBUG] created: {created}, email_verified: {user.email_verified}, magic_code: {user.magic_code}")
+
+
         if created or (not user.email_verified and not user.magic_code):
             logging.warning(f"[PAYMENT] Start sending magic link to: {user.email} (token: {user.token})")
             from redflagcheck.utils.magic_links import send_magic_link
