@@ -135,3 +135,22 @@ def payment_success(request):
     except Exception as ex:
         logging.error(f"Onverwachte fout bij betaling: {ex}")
         return Response({'success': False, 'error': f'Unexpected error: {ex}'}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_token(request):
+    token = request.data.get('token')
+
+    if not token:
+        return Response({'success': False, 'error': 'No token provided'}, status=400)
+
+    try:
+        user = User.objects.get(token=token)
+        return Response({
+            'success': True,
+            'email_verified': user.email_verified,
+            'balance': user.balance,
+        })
+    except User.DoesNotExist:
+        return Response({'success': False, 'error': 'Invalid token'}, status=404)
