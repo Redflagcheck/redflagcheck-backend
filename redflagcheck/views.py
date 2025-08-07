@@ -221,3 +221,33 @@ def resend_magic_link(request):
         return Response({"success": True})
     except User.DoesNotExist:
         return Response({"success": False, "error": "Gebruiker niet gevonden"}, status=404)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_magic_link(request):
+    token = request.data.get("token", "").strip()
+    code = request.data.get("code", "").strip()
+
+    if not token or not code:
+        return Response({"success": False, "error": "Token en/of code ontbreekt"}, status=400)
+
+    try:
+        user = User.objects.get(token=token)
+
+        # Check code én of de magic link nog geldig is
+        if (
+            user.magic_code == code and
+            user.magic_code_expiry and
+            user.magic_code_expiry > timezone.now()
+        ):
+            user.email_verified = True
+            user.magic_code = None  # Code opmaken na gebruik (optioneel, extra veilig)
+            user.magic_code_expiry = None
+            user.save()
+            return Response({"success": True, "message": "E-mailadres is succesvol geverifieerd."})
+        else:
+            return Response({"success": False, "error": "De link is ongeldig of verlopen."}, status=400)
+
+    except User.DoesNotExist:
+        return Response({"success": False, "error": "Gebruiker niet gevonden."}, status=404)
