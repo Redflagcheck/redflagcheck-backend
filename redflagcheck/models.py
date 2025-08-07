@@ -11,6 +11,7 @@ class User(models.Model):
     email_verified = models.BooleanField(default=False)
     magic_code = models.TextField(null=True, blank=True)
     magic_code_expiry = models.DateTimeField(null=True, blank=True)
+    feedback_rewards = models.IntegerField(default=0)  # aantal extra analyses verdiend via feedback
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -44,5 +45,3 @@ class Analysis(models.Model):
     def __str__(self):
         return f"Analysis {self.analysis_id} — {self.user_email}"
     
-
-gpt_reason_q2 = models.TextField(null=True, blank=True)
