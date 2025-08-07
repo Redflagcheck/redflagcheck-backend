@@ -137,6 +137,7 @@ def payment_success(request):
         return Response({'success': False, 'error': f'Unexpected error: {ex}'}, status=500)
 
 
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_token(request):
@@ -151,6 +152,47 @@ def verify_token(request):
             'success': True,
             'email_verified': user.email_verified,
             'balance': user.balance,
+            'saldo_ok': user.balance > 0
         })
     except User.DoesNotExist:
         return Response({'success': False, 'error': 'Invalid token'}, status=404)
+    
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def request_magic_link(request):
+    token = request.data.get("token", "").strip()
+    if not token:
+        return Response({"success": False, "error": "Token ontbreekt"}, status=400)
+
+    try:
+        user = User.objects.get(token=token)
+        if user.email_verified:
+            return Response({"success": False, "error": "E-mail is al geverifieerd"}, status=400)
+
+        from redflagcheck.utils.magic_links import send_magic_link
+        send_magic_link(user.email, token)
+
+        return Response({"success": True})
+    except User.DoesNotExist:
+        return Response({"success": False, "error": "Gebruiker niet gevonden"}, status=404)
+    
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def resend_magic_link(request):
+    token = request.data.get("token", "").strip()
+    if not token:
+        return Response({"success": False, "error": "Token ontbreekt"}, status=400)
+
+    try:
+        user = User.objects.get(token=token)
+        if user.email_verified:
+            return Response({"success": False, "error": "E-mail is al geverifieerd"}, status=400)
+
+        from redflagcheck.utils.magic_links import send_magic_link
+        send_magic_link(user.email, token)
+
+        return Response({"success": True})
+    except User.DoesNotExist:
+        return Response({"success": False, "error": "Gebruiker niet gevonden"}, status=404)
