@@ -125,9 +125,10 @@ def payment_success(request):
         )
 
         if created:
-            logging.warning(f"Nieuwe gebruiker aangemaakt: {email_normalized} met token {token_to_use}")
+            logging.warning(f"[PAYMENT] Start sending magic link to: {user.email} (token: {token_to_use})")
             from redflagcheck.utils.magic_links import send_magic_link
             send_magic_link(user.email, token_to_use)
+            logging.warning(f"[PAYMENT] send_magic_link() called for: {user.email}")
         else:
             if not user.token:
                 user.token = token_to_use
