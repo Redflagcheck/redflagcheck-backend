@@ -79,7 +79,6 @@ def form_submit(request):
 
     return Response({'status': 'success', 'analysis_id': analysis.analysis_id})
 
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def payment_success(request):
@@ -124,12 +123,13 @@ def payment_success(request):
             }
         )
 
-        if created:
-            logging.warning(f"[PAYMENT] Start sending magic link to: {user.email} (token: {token_to_use})")
+        if created or (not user.email_verified and not user.magic_code):
+            logging.warning(f"[PAYMENT] Start sending magic link to: {user.email} (token: {user.token})")
             from redflagcheck.utils.magic_links import send_magic_link
-            send_magic_link(user.email, token_to_use)
+            send_magic_link(user.email, user.token)
             logging.warning(f"[PAYMENT] send_magic_link() called for: {user.email}")
-        else:
+
+        if not created:
             if not user.token:
                 user.token = token_to_use
             user.balance += credits
