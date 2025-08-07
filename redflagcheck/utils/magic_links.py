@@ -9,7 +9,7 @@ import logging
 SMTP_HOST = "smtp.transip.email"
 SMTP_PORT = 465
 SMTP_USER = "info@redflagcheck.nl"
-SMTP_PASSWORD = "wwvoorRFC137"
+SMTP_PASSWORD = "=wwvoorRFC137"
 
 def send_magic_link(to_email, token):
     try:
