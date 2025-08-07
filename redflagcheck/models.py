@@ -28,13 +28,21 @@ class Analysis(models.Model):
     screenshot_url = models.TextField(null=True, blank=True)
     ocr = models.TextField(null=True, blank=True)
     question1 = models.TextField(null=True, blank=True)
+    reason_q1 = models.TextField(null=True, blank=True)
     answer1 = models.TextField(null=True, blank=True)
     question2 = models.TextField(null=True, blank=True)
+    reason_q2 = models.TextField(null=True, blank=True)
     answer2 = models.TextField(null=True, blank=True)
     result = models.TextField(null=True, blank=True)
     gpt_result_html = models.TextField(null=True, blank=True)
+    satisfaction_score = models.IntegerField(null=True, blank=True)  # 1 t/m 5
+    nps_score = models.IntegerField(null=True, blank=True)          # 0 t/m 10
+    user_feedback = models.TextField(null=True, blank=True)         # open tekst
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Analysis {self.analysis_id} — {self.user_email}"
+    
+
+gpt_reason_q2 = models.TextField(null=True, blank=True)
