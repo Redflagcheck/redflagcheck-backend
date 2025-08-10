@@ -33,7 +33,8 @@ SECRET_KEY = 'django-insecure-&ix!jqtj)$k#tq2#5_k_ej_6(1ic1!0ytxa_d--(onk1_u8w(1
 DEBUG = True
 
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
+#ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 
 # Application definition
@@ -165,3 +166,14 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "redflagcheck_db",  # Met _ (underscore)
+        "USER": "redflagcheck_db_user",
+        "PASSWORD": "49TrSaIM0k3HoJX8Z44lcqN2VGdulzhJ",
+        "HOST": "dpg-d212hindiees73crcmcg-a.oregon-postgres.render.com",  # Alleen de hostnaam!
+        "PORT": "5432",
+    }
+}

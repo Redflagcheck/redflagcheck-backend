@@ -9,4 +9,8 @@ urlpatterns = [
     path('update_email/', views.update_email, name='update_email'),
     path('resend_magic_link/', views.resend_magic_link, name='resend_magic_link'),
     path('verify_magic_link/', views.verify_magic_link, name='verify_magic_link'),
+    path('start_analysis/', views.start_analysis, name='start_analysis'),
+    path('complete_analysis/', views.complete_analysis, name='complete_analysis'),
+    path('confirm_analysis_viewed/', views.confirm_analysis_viewed, name='confirm_analysis_viewed'),
+
 ]

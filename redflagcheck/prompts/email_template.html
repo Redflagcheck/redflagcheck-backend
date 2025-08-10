@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Jouw RedFlagCheck Analyse</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #ffffff; color: #222; padding: 20px;">
+  <h2 style="color: #b30000;">❤️ Jouw RedFlagCheck Analyse</h2>
+  
+
+
+<p>Hoi {{ naam }},<br><br>
+Bedankt voor het gebruiken van onze RedFlagCheck AI. Het kan je helpen bij het inschatten van verkeerde intenties en geeft je tips hoe je in bepaalde situaties meer duidelijkheid kunt krijgen.
+  
+</p>
+
+
+  
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;" />
+  {% if aantal_over > 1 %}
+    <p style="font-size: 14px; color: #222; margin-bottom: 6px;">
+      🧮 Je hebt nog <strong>{{ aantal_over }}</strong> analyses over op jouw tegoed.
+    </p>
+    <p style="margin-top: 0;">
+      <a href="https://redflagcheck.nl/?frokgnsdjg={{ token }}&email={{ ontvanger_email }}" 
+         style="display: inline-block; background-color: #b30000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        ➕ Gebruik mijn resterende analyses
+      </a>
+    </p>
+
+  {% elif aantal_over == 1 %}
+    <p style="font-size: 14px; color: #b30000; margin-bottom: 6px;">
+      ⚠️ Je hebt nog 1 analyse over. <br>
+      <a href="https://redflagcheck.nl/betaaltest" style="color: #b30000;">Klik hier om je tegoed aan te vullen.</a>
+    </p>
+    <p style="margin-top: 0;">
+      <a href="https://redflagcheck.nl/?frokgnsdjg={{ token }}&email={{ ontvanger_email }}" 
+         style="display: inline-block; background-color: #b30000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        ➕ Gebruik mijn laatste analyse
+      </a>
+    </p>
+
+  {% elif aantal_over == 0 %}
+    <p style="font-size: 14px; color: #b30000;">
+      ⚠️ Dit was je laatste analyse. Je hebt geen tegoed meer. <br>
+      <a href="https://redflagcheck.nl/kopen" style="color: #b30000;">Klik hier om je tegoed aan te vullen.</a>
+    </p>
+  {% endif %}
+
+  <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;" />
+
+  <p style="margin-bottom: 10px;">Hieronder zie je de analyse van het bericht dat je hebt ingestuurd:</p>
+
+  <div style="font-family: Arial, sans-serif; font-size: 15px; color: #222;">
+    <div style="white-space: pre-wrap; background-color: #f9f9f9; padding: 15px; border: 1px solid #eee; border-radius: 6px; margin-top: 0;">
+      {{ analyse_html | safe }}
+    </div>
+
+    <p style="font-size: 14px; color: #666; margin-top: 20px;">
+      ❗Deze analyse is een AI-inschatting en geen psychologisch of juridisch oordeel. Deze analyse is bedoeld als hulpmiddel bij het inschatten van risico’s en intenties, maar kan menselijke intuïtie niet vervangen.<br><br>
+      Heb je feedback of vragen? Neem contact met ons op via het contactformulier op de website **Link**
+    </p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<h3>Samenvatting van jouw ingevulde gegevens:</h3>
+
+<b>📩 Origineel bericht:</b><br>
+[BERICHT_VAN_DE_MAN]
+
+<b>OCR-tekst (uit screenshot):</b><br>
+[OCR_INVOER]<br><br>
+
+<b>📝 Context:</b><br>
+[GEBRUIKERS_CONTEXT]
+
+<b>Vraag 1:</b> [VRAAG_1]<br>
+<b>Jouw antwoord:</b> [ANTWOORD_1]<br><br>
+<b>Vraag 2:</b> [VRAAG_2]<br>
+<b>Jouw antwoord:</b> [ANTWOORD_2]<br><br>
+
+
+---
+
+🔎 Analyse door RedFlagCheck AI:
+
+{{GPT_ANTWOORD}}
+
+
+
+
+

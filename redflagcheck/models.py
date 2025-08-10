@@ -36,6 +36,8 @@ class Analysis(models.Model):
     answer2 = models.TextField(null=True, blank=True)
     result = models.TextField(null=True, blank=True)
     gpt_result_html = models.TextField(null=True, blank=True)
+    is_charged = models.BooleanField(default=False) #is het resultaat getoond?
+    charged_at = models.DateTimeField(null=True, blank=True) #wanneer is het resultaat getoond
     satisfaction_score = models.IntegerField(null=True, blank=True)  # 1 t/m 5
     nps_score = models.IntegerField(null=True, blank=True)          # 0 t/m 10
     user_feedback = models.TextField(null=True, blank=True)         # open tekst
@@ -44,4 +46,17 @@ class Analysis(models.Model):
 
     def __str__(self):
         return f"Analysis {self.analysis_id} — {self.user_email}"
-    
+
+class Payment(models.Model):
+    payment_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    old_email = models.EmailField()
+    new_email = models.EmailField(null=True, blank=True)
+    credits = models.IntegerField()
+    balance_before = models.IntegerField(null=True, blank=True)
+    restored = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Payment {self.payment_id} — {self.old_email} (+{self.credits} credits)"

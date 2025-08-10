@@ -12,6 +12,7 @@ SMTP_USER = "info@redflagcheck.nl"
 SMTP_PASSWORD = "=wwvoorRFC137"
 
 def send_magic_link(to_email, token):
+    logging.warning("send_magic_link AANGEROEPEN")
     try:
         # Zoek user en genereer unieke magic_code en expiry
         user = User.objects.get(token=token)
