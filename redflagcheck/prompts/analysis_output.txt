@@ -1,22 +1,42 @@
 <h3>Samenvatting van jouw ingevulde gegevens:</h3>
 
-<b>📩 Origineel bericht:</b><br>
-[BERICHT_VAN_DE_MAN]
+<p><b>📩 Origineel bericht:</b><br>
+[BERICHT_VAN_DE_MAN]</p>
 
-<b>OCR-tekst (uit screenshot):</b><br>
-[OCR_INVOER]<br><br>
+<p><b>Tekst (uit screenshot):</b><br>
+[OCR_INVOER]</p>
 
-<b>📝 Context:</b><br>
-[GEBRUIKERS_CONTEXT]
+<p><b>📝 Context:</b><br>
+[GEBRUIKERS_CONTEXT]</p>
 
-<b>Vraag 1:</b> [VRAAG_1]<br>
-<b>Jouw antwoord:</b> [ANTWOORD_1]<br><br>
-<b>Vraag 2:</b> [VRAAG_2]<br>
-<b>Jouw antwoord:</b> [ANTWOORD_2]<br><br>
+<p><b>Vraag 1:</b> [VRAAG_1]<br>
+<b>Jouw antwoord:</b> [ANTWOORD_1]</p>
+<p><b>Vraag 2:</b> [VRAAG_2]<br>
+<b>Jouw antwoord:</b> [ANTWOORD_2]</p>
 
 
----
+<hr>
+<section class="rfc-analysis">
+  <h3 style="margin:0 0 8px;">🔎 Analyse door RedFlagCheck AI</h3>
+  <!-- Laat GPT platte tekst leveren; wij zorgen dat nieuwe regels zichtbaar blijven -->
+  <div style="white-space: pre-wrap; line-height: 1.5;">
+    {{GPT_ANTWOORD}}
+  </div>
+</section>
 
+<hr>
+<p>
+👉 *Wil je zijn gedrag écht doorgronden? Vraag de Dark Mode Analyse aan en ontdek zijn diepste patronen.*
+</p>
+<p>
+💭 Let op: deze analyse is een AI-inschatting en geen psychologisch of juridisch oordeel.
+
+  
+
+❗Deze analyse is bedoeld als hulpmiddel bij het inschatten van risico’s en intenties, maar kan menselijke intuïtie niet vervangen.
+</p>
+Heb je feedback of vragen? Mail gerust naar info@redflagcheck.nl. 
+<br>
 🔎 Analyse door RedFlagCheck AI:
 
 {{GPT_ANTWOORD}}

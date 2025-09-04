@@ -20,7 +20,15 @@ import openai
 from pathlib import Path
 from redflagcheck.utils.parsers import parse_why_q
 from django.conf import settings
+from django.db import transaction
+import time
+from django.utils.timezone import now
+from openai import OpenAI
 
+
+
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # Projectroot
@@ -30,7 +38,7 @@ PROMPTS_DIR = BASE_DIR / "redflagcheck" / "prompts"
 P_ANALYSE = (PROMPTS_DIR / "prompt_analyse.txt").read_text(encoding="utf-8")
 P_OUTPUT  = (PROMPTS_DIR / "analysis_output.txt").read_text(encoding="utf-8")
 
-openai.api_key = os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY")
+
 
 
 # ——— Diagnostics ———
@@ -49,9 +57,8 @@ def chat_complete(model: str, messages: list, temperature: float = 0.2, max_toke
     Retourneert altijd de .content string.
     """
     try:
-        # Probeer 1.x stijl eerst (jouw omgeving draait 1.99.4)
+        # Probeer eerst nieuwe 1.x manier (jouw huidige versie)
         try:
-            from openai import OpenAI
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             resp = client.chat.completions.create(
                 model=model,
@@ -61,7 +68,7 @@ def chat_complete(model: str, messages: list, temperature: float = 0.2, max_toke
             )
             return resp.choices[0].message.content.strip()
         except Exception:
-            # Fallback naar 0.x (voor het geval je lokaal wisselt)
+            # Fallback naar oude 0.x manier
             if hasattr(openai, "ChatCompletion"):
                 resp = openai.ChatCompletion.create(
                     model=model,
@@ -74,7 +81,6 @@ def chat_complete(model: str, messages: list, temperature: float = 0.2, max_toke
     except Exception as e:
         logging.exception(f"[OpenAI] chat_complete error: {e}")
         raise
-
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
@@ -100,10 +106,23 @@ def extract_ocr_from_base64(base64_str):
     except Exception as e:
         return f"[OCR Error: {str(e)}]"
 
+def _load_prompt(path: str):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            txt = f.read()
+        return True, txt, None
+    except Exception as e:
+        logging.exception("[start_analysis] Prompt lezen faalt")
+        return False, None, str(e)
+    
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def form_submit(request):
+    logging.warning("🚨 form_submit AANGEROEPEN")
+    logging.warning(f"🚨 from={request.META.get('REMOTE_ADDR')} len_body={len(request.body or b'')}")
+    logging.warning(f"🚨 content_type={request.META.get('CONTENT_TYPE')}")
+    start_time = time.time()
     logging.info("[RedFlagCheck] Nieuw formulier ontvangen.")
 
     email = (request.data.get('email') or "").strip().lower()
@@ -154,10 +173,19 @@ def form_submit(request):
     if not ocr_text:
         ocr_text = ocr_input
 
+    mid_time = time.time()
+    logging.info(f"[perf] form_submit deel 1 duurde {(mid_time - start_time) * 1000:.2f} ms")
+
     # --- GEBRUIKER AANMAKEN/OPHALEN ---
+    u0 = time.time()
     user, _ = User.objects.get_or_create(email=email, defaults={'name': name})
+    mid_user = time.time()
+    logging.info(f"[perf] user_get_or_create_ms={(time.time()-u0)*1000:.2f}")
+
+
 
     # --- ANALYSE OPSLAAN ---
+    a0 = time.time()
     analysis = Analysis.objects.create(
         user=user,
         user_email=email,
@@ -172,9 +200,48 @@ def form_submit(request):
         result=result,
         gpt_result_html=gpt_result_html
     )
+    logging.info(f"[perf] analysis_create_ms={(time.time()-a0)*1000:.2f}")
+
+
 
     logging.info(f"[RedFlagCheck] Analyse opgeslagen (id: {analysis.analysis_id}) voor {email}")
-    return Response({'status': 'success', 'analysis_id': analysis.analysis_id})
+    duration_ms = (time.time() - start_time) * 1000
+    
+    end_time = time.time()
+
+    deel1_ms = (mid_time - start_time) * 1000.0
+    user_ms  = (mid_user - mid_time) * 1000.0
+    analysis_ms = (end_time - mid_user) * 1000.0
+    deel2_ms = user_ms + analysis_ms
+    totaal_ms = (end_time - start_time) * 1000.0
+
+    logging.info(f"[perf] user_get_or_create_ms={user_ms:.2f}")
+    logging.info(f"[perf] analysis_create_ms={analysis_ms:.2f}")
+    logging.info(f"[perf] deel2_ms={deel2_ms:.2f}")
+    logging.info(f"[perf] total_ms={totaal_ms:.2f}")
+
+    resp = Response({
+        'status': 'success',
+        'analysis_id': analysis.analysis_id,
+        'perf': {
+            'deel1_ms': round(deel1_ms, 2),
+            'user_get_or_create_ms': round(user_ms, 2),
+            'analysis_create_ms': round(analysis_ms, 2),
+            'deel2_ms': round(deel2_ms, 2),
+            'totaal_ms': round(totaal_ms, 2),
+        }
+    })
+
+    resp['X-RFC-Perf'] = (
+        f"d1={deel1_ms:.2f}ms; user={user_ms:.2f}ms; "
+        f"analysis={analysis_ms:.2f}ms; d2={deel2_ms:.2f}ms; tot={totaal_ms:.2f}ms"
+    )
+
+    return resp
+   # return Response({'status': 'success', 'analysis_id': analysis.analysis_id})
+
+
+
 
 
 
@@ -279,7 +346,10 @@ def start_analysis(request):
     OUT: { "status":"success", "reason_q1","question1","reason_q2","question2" }
          of { "status":"error", "message": ... }
     """
+    logging.warning("[start_analysis] functie gestart")
     analysis_id = request.data.get("analysis_id")
+    logging.info(f"[start_analysis] AANGEROEPEN met analysis_id={analysis_id} en raw data={request.data}")
+
     if not analysis_id:
         return Response({"status": "error", "message": "Geen analysis_id opgegeven."}, status=400)
 
@@ -287,7 +357,7 @@ def start_analysis(request):
         analysis = Analysis.objects.get(analysis_id=analysis_id)
     except Analysis.DoesNotExist:
         return Response({"status": "error", "message": "Analyse niet gevonden."}, status=404)
-
+    logging.info(f"[start_analysis] ➜ IN analysis_id={analysis_id}")
     # Check saldo gebruiker (geen afschrijving in deze functie)
     if analysis.user.balance <= 0:
         return Response({
@@ -314,8 +384,9 @@ def start_analysis(request):
 
     # GPT-call met losse inputs
     try:
+        logging.info(f"[start_analysis] GPT-call start, model=gpt-4o")
         gpt_reply = chat_complete(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Volg exact het gevraagde outputformat."},
                 {"role": "user", "content": prompt_template},
@@ -326,6 +397,7 @@ def start_analysis(request):
             temperature=0.2,
             max_tokens=220,
         )
+        logging.info(f"[start_analysis] GPT-call klaar: {gpt_reply[:200]!r}")
         logging.info(f"[start_analysis] GPT reply (first 200): {gpt_reply[:200]!r}")
 
         parsed = parse_why_q(gpt_reply)
@@ -513,7 +585,7 @@ def complete_analysis(request):
         gpt_text = chat_complete(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Je bent RedFlag AI – voer de analyse uit in het Nederlands. Geef uitsluitend platte tekst (geen HTML of Markdown)."},
+                {"role": "system", "content": "Je bent RedFlag AI. Antwoord in het Nederlands met een korte, nette HTML-snippet (geen <html> of <body>). Gebruik <p>, <ul>/<li> of <ol>/<li> en maak koppen vet met <b>…</b>. Geen Markdown, geen inline styles."},
                 {"role": "user", "content": prompt_text},
                 {"role": "user", "content": f"Bericht van de man:\n{analysis.message or ''}"},
                 {"role": "user", "content": f"OCR-tekst uit screenshot (optioneel):\n{analysis.ocr or ''}"},
@@ -580,13 +652,7 @@ def complete_analysis(request):
         status=200,
     )
 
-# backend/redflagcheck/views.py  — voeg deze functie toe (onder je andere API views)
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from django.db import transaction
-from django.utils import timezone
-from .models import User, Analysis
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
