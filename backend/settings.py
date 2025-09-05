@@ -29,6 +29,8 @@ ALLOWED_HOSTS = _split_env(
     "127.0.0.1,localhost,.onrender.com,redflagcheck.nl,www.redflagcheck.nl"
 )
 
+logging.info(f"ALLOWED_HOSTS at boot: {ALLOWED_HOSTS}")
+
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
