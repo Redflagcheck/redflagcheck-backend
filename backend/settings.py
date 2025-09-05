@@ -24,10 +24,14 @@ def _split_env(name: str, default: str = ""):
     return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
 
 # ALLOWED_HOSTS robuust instellen
-ALLOWED_HOSTS = _split_env(
-    "ALLOWED_HOSTS",
-    "127.0.0.1,localhost,.onrender.com,redflagcheck.nl,www.redflagcheck.nl"
-)
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    ".onrender.com",          # alle subdomeinen van onrender.com
+    "redflagcheck.nl",
+    "www.redflagcheck.nl",
+    "redflagcheck-new.onrender.com",  # expliciet erbij
+]
 
 logging.info(f"ALLOWED_HOSTS at boot: {ALLOWED_HOSTS}")
 
