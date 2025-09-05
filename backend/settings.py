@@ -23,14 +23,7 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 def _split_env(name: str, default: str = ""):
     return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
 
-ALLOWED_HOSTS = [
-    "redflagcheck-new.onrender.com",
-    "redflagcheck.nl",
-    "www.redflagcheck.nl",
-    "127.0.0.1",
-    "localhost",
-    'redflagcheck-new.onrender.com',
-]
+ALLOWED_HOSTS = ["*"]
 
 
 logging.info(f"ALLOWED_HOSTS at boot: {ALLOWED_HOSTS}")
