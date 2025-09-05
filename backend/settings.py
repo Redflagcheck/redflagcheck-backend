@@ -29,10 +29,13 @@ ALLOWED_HOSTS = [
     "www.redflagcheck.nl",
     "127.0.0.1",
     "localhost",
+    'redflagcheck-new.onrender.com',
 ]
 
 
 logging.info(f"ALLOWED_HOSTS at boot: {ALLOWED_HOSTS}")
+
+
 
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
