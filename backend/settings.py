@@ -20,10 +20,14 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-change-me")  # In Render als env var z
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # --- Hosts & Proxy headers ---
-ALLOWED_HOSTS = os.getenv(
+def _split_env(name: str, default: str = ""):
+    return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
+
+# ALLOWED_HOSTS robuust instellen
+ALLOWED_HOSTS = _split_env(
     "ALLOWED_HOSTS",
     "127.0.0.1,localhost,.onrender.com,redflagcheck.nl,www.redflagcheck.nl"
-).split(",")
+)
 
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -81,8 +85,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "backend.wsgi.application"
 
 # --- Database via DATABASE_URL (Render) met veilige defaults ---
-# Gebruik in Render de "External Connection String" als DATABASE_URL,
-# dj_database_url voegt ssl toe met ssl_require=True
 DATABASES = {
     "default": dj_database_url.config(
         default=os.getenv("DATABASE_URL", ""), conn_max_age=600, ssl_require=True
@@ -113,10 +115,6 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # --- CORS/CSRF helpers ---
-def _split_env(name: str, default: str = ""):
-    return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
-
-# Alleen nodig voor browser-origin requests (WP server-side post heeft dit niet nodig)
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = _split_env(
     "CORS_ALLOWED_ORIGINS",
@@ -124,7 +122,6 @@ CORS_ALLOWED_ORIGINS = _split_env(
 )
 CORS_ALLOW_CREDENTIALS = False  # zet alleen True als je cookies/credentials nodig hebt
 
-# Voor CSRF: altijd met expliciete https:// prefix
 CSRF_TRUSTED_ORIGINS = _split_env(
     "CSRF_TRUSTED_ORIGINS",
     "https://redflagcheck.nl,https://www.redflagcheck.nl,https://redflagcheck-backend-y06m.onrender.com",
@@ -141,9 +138,14 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "standard": {"format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s", "datefmt": "%H:%M:%S"},
+        "standard": {
+            "format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
+            "datefmt": "%H:%M:%S"
+        },
     },
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "standard", "level": "INFO"}},
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "standard", "level": "INFO"}
+    },
     "root": {"handlers": ["console"], "level": "INFO"},
     "loggers": {
         "redflagcheck": {"level": "INFO", "handlers": ["console"], "propagate": True},
