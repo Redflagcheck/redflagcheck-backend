@@ -4,6 +4,14 @@ from pathlib import Path
 
 import dj_database_url
 from dotenv import load_dotenv
+from django.utils.deprecation import MiddlewareMixin
+
+class DebugHostMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        logging.error(f"Incoming Host header: {request.META.get('HTTP_HOST')}")
+        return None
+  
+  
 
 # --- Load .env only for local/dev ---
 load_dotenv()
@@ -23,16 +31,15 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 def _split_env(name: str, default: str = ""):
     return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
 
-ALLOWED_HOSTS = ["*"]
+# ---- Host handling (force accept for Render) ----
+ALLOWED_HOSTS = ["*"]          # accepteer alles (tijdelijk)
+USE_X_FORWARDED_HOST = False   # negeer forwarded host
+SECURE_SSL_REDIRECT = False    # voorkom vroegtijdige redirect die get_host triggert
+
+# laat in logs zien wat er actief is
+print("DEBUG ALLOWED_HOSTS:", ALLOWED_HOSTS)
 
 
-logging.info(f"ALLOWED_HOSTS at boot: {ALLOWED_HOSTS}")
-
-
-
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
 
 # --- Optional: API key uit env (niet hardcoderen) ---
 RFC_API_KEY = os.getenv("RFC_API_KEY", "")
@@ -55,6 +62,7 @@ INSTALLED_APPS = [
 
 # --- Middleware (volgorde belangrijk) ---
 MIDDLEWARE = [
+    "backend.settings.DebugHostMiddleware",  # <-- verwijst nu naar settings.py
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # vóór CommonMiddleware
     "corsheaders.middleware.CorsMiddleware",
@@ -65,6 +73,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+
 
 ROOT_URLCONF = "backend.urls"
 
