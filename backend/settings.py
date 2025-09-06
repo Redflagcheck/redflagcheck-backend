@@ -4,95 +4,35 @@ from pathlib import Path
 
 import dj_database_url
 from dotenv import load_dotenv
-from django.utils.deprecation import MiddlewareMixin
-from django.conf import settings
 
-# NUCLEAR OPTION: Disable Django's host validation completely
-import django.core.handlers.wsgi
-django.core.handlers.wsgi.WSGIHandler.check_settings = lambda self: None
-
-class DebugHostMiddleware(MiddlewareMixin):
-    def process_request(self, request):
-        host = request.META.get('HTTP_HOST', 'NO_HOST')
-        x_forwarded_host = request.META.get('HTTP_X_FORWARDED_HOST', 'NO_X_FORWARDED_HOST')
-        logging.error(f"Host: {host}, X-Forwarded-Host: {x_forwarded_host}")
-        logging.error(f"ALLOWED_HOSTS: {getattr(settings, 'ALLOWED_HOSTS', 'NOT_SET')}")
-        return None
-  
-  
-
-# --- Load .env only for local/dev ---
+# Alleen lokale .env laden
 load_dotenv()
 
-# --- Logging (console) ---
-logging.basicConfig(level=logging.INFO)
-
-# --- Paths ---
+# --- Paden ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- Security & Debug via env ---
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-change-me")  # In Render als env var zetten
-
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-
-# --- Hosts & Proxy headers ---
+# --- Helpers ---
 def _split_env(name: str, default: str = ""):
     return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
 
-# ---- Host handling (RENDER-SPECIFIEKE FIX) ----
-import socket
+# --- Security / Debug ---
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-change-me")
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-def get_render_hosts():
-    """Get all possible Render hostnames"""
-    hosts = ["*"]  # wildcard als fallback
-    
-    # Voeg externe hostname toe
-    if os.getenv('RENDER_EXTERNAL_HOSTNAME'):
-        hosts.append(os.getenv('RENDER_EXTERNAL_HOSTNAME'))
-    
-    # Voeg interne Render hostnames toe
-    try:
-        hostname = socket.gethostname()
-        hosts.append(hostname)
-        # Render gebruikt vaak srv-xxx formaat
-        if hostname.startswith('srv-'):
-            hosts.append(f"{hostname}.onrender.com")
-    except:
-        pass
-        
-    # Voeg bekende hosts toe
-    hosts.extend([
-        "redflagcheck-new.onrender.com",
-        "redflagcheck.nl", 
-        "www.redflagcheck.nl",
-        "localhost",
-        "127.0.0.1"
-    ])
-    
-    return hosts
+# Render geeft dit mee; gebruiken als default host
+RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
 
-ALLOWED_HOSTS = [
-    "redflagchecklastversion.onrender.com",
-    "redflagchecklastversion.onrender.com:10000",  # nodig voor Render health check
-    "redflagcheck.nl",
-    "www.redflagcheck.nl",
-    "127.0.0.1",
-    "localhost",
-    ".onrender.com",  # wildcard: dekt toekomstige Render subdomeinen
-]
+_default_allowed = "127.0.0.1,localhost"
+if RENDER_HOST:
+    # jouw concrete service + alle onrender-subdomeinen als fallback
+    _default_allowed = f"{RENDER_HOST},.onrender.com," + _default_allowed
+
+ALLOWED_HOSTS = _split_env("ALLOWED_HOSTS", _default_allowed)
+
+# Achter Render/Cloudflare zit je achter een proxy:
 USE_X_FORWARDED_HOST = True
-SECURE_SSL_REDIRECT = True
-
-
-
-# laat in logs zien wat er actief is
-print("DEBUG ALLOWED_HOSTS:", ALLOWED_HOSTS)
-print("DEBUG MODE:", DEBUG)
-
-
-
-# --- Optional: API key uit env (niet hardcoderen) ---
-RFC_API_KEY = os.getenv("RFC_API_KEY", "")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
 
 # --- Apps ---
 INSTALLED_APPS = [
@@ -106,13 +46,12 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "django_extensions",
-    # local apps
+    # local
     "redflagcheck",
 ]
 
-# --- Middleware (HOST MIDDLEWARE EERST!) ---
+# --- Middleware ---
 MIDDLEWARE = [
-    "backend.settings.DebugHostMiddleware",  # EERST - vóór alle andere middleware
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -123,8 +62,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
-
 
 ROOT_URLCONF = "backend.urls"
 
@@ -145,10 +82,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.wsgi.application"
 
-# --- Database via DATABASE_URL (Render) met veilige defaults ---
+# --- Database (Render Postgres via DATABASE_URL) ---
 DATABASES = {
     "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL", ""), conn_max_age=600, ssl_require=True
+        default=os.getenv("DATABASE_URL", ""),
+        conn_max_age=600,
+        ssl_require=True,
     )
 }
 
@@ -157,62 +96,4 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
-
-# --- I18N / TZ ---
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Europe/Amsterdam"
-USE_I18N = True
-USE_TZ = True
-
-# --- Static (Whitenoise) ---
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# --- Media (optioneel; Render static only — voor media gebruik S3/Cloud storage) ---
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
-# --- CORS/CSRF helpers ---
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = _split_env(
-    "CORS_ALLOWED_ORIGINS",
-    "https://redflagcheck.nl,https://www.redflagcheck.nl,https://redflagcheck-backend-y06m.onrender.com,https://redflagcheck-new.onrender.com",
-)
-CORS_ALLOW_CREDENTIALS = False  # zet alleen True als je cookies/credentials nodig hebt
-
-CSRF_TRUSTED_ORIGINS = _split_env(
-    "CSRF_TRUSTED_ORIGINS",
-    "https://redflagcheck.nl,https://www.redflagcheck.nl,https://redflagcheck-backend-y06m.onrender.com,https://redflagcheck-new.onrender.com",
-)
-
-# --- DRF (optioneel basis) ---
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": [],
-}
-
-# --- Logging wat netter op console ---
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "standard": {
-            "format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
-            "datefmt": "%H:%M:%S"
-        },
-    },
-    "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "standard", "level": "INFO"}
-    },
-    "root": {"handlers": ["console"], "level": "INFO"},
-    "loggers": {
-        "redflagcheck": {"level": "INFO", "handlers": ["console"], "propagate": True},
-        "django": {"level": "WARNING", "handlers": ["console"], "propagate": False},
-    },
-}
-
-# --- Default PK ---
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+    {"NAME": "django.contrib.auth.password_validation.NumericPa_
