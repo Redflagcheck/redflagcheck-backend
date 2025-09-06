@@ -73,10 +73,12 @@ def get_render_hosts():
 
 ALLOWED_HOSTS = [
     "redflagchecklastversion.onrender.com",
+    "redflagchecklastversion.onrender.com:10000",  # nodig voor Render health check
     "redflagcheck.nl",
     "www.redflagcheck.nl",
     "127.0.0.1",
     "localhost",
+    ".onrender.com",  # wildcard: dekt toekomstige Render subdomeinen
 ]
 USE_X_FORWARDED_HOST = True
 SECURE_SSL_REDIRECT = True
