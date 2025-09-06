@@ -9,6 +9,11 @@ from django.conf import settings
 
 # NUCLEAR OPTION: Disable Django's host validation completely
 import django.core.handlers.wsgi
+
+if os.environ.get('DJANGO_ALLOWED_HOSTS'):
+    ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS').split(',')
+
+
 django.core.handlers.wsgi.WSGIHandler.check_settings = lambda self: None
 
 class DebugHostMiddleware(MiddlewareMixin):
