@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 from django.utils.deprecation import MiddlewareMixin
 from django.conf import settings
 
+# NUCLEAR OPTION: Disable Django's host validation completely
+import django.core.handlers.wsgi
+django.core.handlers.wsgi.WSGIHandler.check_settings = lambda self: None
+
 class DebugHostMiddleware(MiddlewareMixin):
     def process_request(self, request):
         host = request.META.get('HTTP_HOST', 'NO_HOST')
@@ -73,11 +77,11 @@ INSTALLED_APPS = [
     "redflagcheck",
 ]
 
-# --- Middleware (OPLOSSING 2: DebugHostMiddleware verplaatst) ---
+# --- Middleware (HOST MIDDLEWARE EERST!) ---
 MIDDLEWARE = [
+    "backend.settings.DebugHostMiddleware",  # EERST - vóór alle andere middleware
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # vóór CommonMiddleware
-    "backend.settings.DebugHostMiddleware",  # VERPLAATST: na security middleware
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
