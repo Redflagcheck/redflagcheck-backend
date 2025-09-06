@@ -53,7 +53,7 @@ INSTALLED_APPS = [
 # --- Middleware ---
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",   # Whitenoise direct na security
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -98,3 +98,64 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+
+# --- I18N / TZ ---
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "Europe/Amsterdam"
+USE_I18N = True
+USE_TZ = True
+
+# --- Static (Whitenoise) ---
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# --- Media (optioneel) ---
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# --- CORS/CSRF helpers ---
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = _split_env(
+    "CORS_ALLOWED_ORIGINS",
+    "https://redflagcheck.nl,https://www.redflagcheck.nl",
+)
+CORS_ALLOW_CREDENTIALS = False
+
+CSRF_TRUSTED_ORIGINS = _split_env(
+    "CSRF_TRUSTED_ORIGINS",
+    "https://redflagcheck.nl,https://www.redflagcheck.nl",
+)
+
+# --- DRF (optioneel basis) ---
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": [],
+}
+
+# --- Logging ---
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
+            "datefmt": "%H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+            "level": "INFO",
+        },
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "redflagcheck": {"level": "INFO", "handlers": ["console"], "propagate": True},
+        "django": {"level": "WARNING", "handlers": ["console"], "propagate": False},
+    },
+}
+
+# --- Default PK ---
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
