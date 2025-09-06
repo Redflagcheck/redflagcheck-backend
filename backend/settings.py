@@ -5,10 +5,14 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 from django.utils.deprecation import MiddlewareMixin
+from django.conf import settings
 
 class DebugHostMiddleware(MiddlewareMixin):
     def process_request(self, request):
-        logging.error(f"Incoming Host header: {request.META.get('HTTP_HOST')}")
+        host = request.META.get('HTTP_HOST', 'NO_HOST')
+        x_forwarded_host = request.META.get('HTTP_X_FORWARDED_HOST', 'NO_X_FORWARDED_HOST')
+        logging.error(f"Host: {host}, X-Forwarded-Host: {x_forwarded_host}")
+        logging.error(f"ALLOWED_HOSTS: {getattr(settings, 'ALLOWED_HOSTS', 'NOT_SET')}")
         return None
   
   
@@ -31,13 +35,22 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 def _split_env(name: str, default: str = ""):
     return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
 
-# ---- Host handling (force accept for Render) ----
-ALLOWED_HOSTS = ["*"]          # accepteer alles (tijdelijk)
+# ---- Host handling (OPLOSSING 1: Specifieke hosts toegevoegd) ----
+ALLOWED_HOSTS = [
+    "*",  # accepteer alles (tijdelijk)
+    "redflagcheck-new.onrender.com",  # specifieke Render URL
+    "redflagcheck.nl",
+    "www.redflagcheck.nl",
+    "localhost",
+    "127.0.0.1",
+]
+
 USE_X_FORWARDED_HOST = False   # negeer forwarded host
 SECURE_SSL_REDIRECT = False    # voorkom vroegtijdige redirect die get_host triggert
 
 # laat in logs zien wat er actief is
 print("DEBUG ALLOWED_HOSTS:", ALLOWED_HOSTS)
+print("DEBUG MODE:", DEBUG)
 
 
 
@@ -60,11 +73,11 @@ INSTALLED_APPS = [
     "redflagcheck",
 ]
 
-# --- Middleware (volgorde belangrijk) ---
+# --- Middleware (OPLOSSING 2: DebugHostMiddleware verplaatst) ---
 MIDDLEWARE = [
-    "backend.settings.DebugHostMiddleware",  # <-- verwijst nu naar settings.py
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # vóór CommonMiddleware
+    "backend.settings.DebugHostMiddleware",  # VERPLAATST: na security middleware
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -129,13 +142,13 @@ MEDIA_ROOT = BASE_DIR / "media"
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = _split_env(
     "CORS_ALLOWED_ORIGINS",
-    "https://redflagcheck.nl,https://www.redflagcheck.nl,https://redflagcheck-backend-y06m.onrender.com",
+    "https://redflagcheck.nl,https://www.redflagcheck.nl,https://redflagcheck-backend-y06m.onrender.com,https://redflagcheck-new.onrender.com",
 )
 CORS_ALLOW_CREDENTIALS = False  # zet alleen True als je cookies/credentials nodig hebt
 
 CSRF_TRUSTED_ORIGINS = _split_env(
     "CSRF_TRUSTED_ORIGINS",
-    "https://redflagcheck.nl,https://www.redflagcheck.nl,https://redflagcheck-backend-y06m.onrender.com",
+    "https://redflagcheck.nl,https://www.redflagcheck.nl,https://redflagcheck-backend-y06m.onrender.com,https://redflagcheck-new.onrender.com",
 )
 
 # --- DRF (optioneel basis) ---
