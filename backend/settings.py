@@ -71,10 +71,17 @@ def get_render_hosts():
     
     return hosts
 
-ALLOWED_HOSTS = get_render_hosts()
+ALLOWED_HOSTS = [
+    "redflagchecklastversion.onrender.com",
+    "redflagcheck.nl",
+    "www.redflagcheck.nl",
+    "127.0.0.1",
+    "localhost",
+]
+USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = True
 
-USE_X_FORWARDED_HOST = False   # negeer forwarded host
-SECURE_SSL_REDIRECT = False    # voorkom vroegtijdige redirect die get_host triggert
+
 
 # laat in logs zien wat er actief is
 print("DEBUG ALLOWED_HOSTS:", ALLOWED_HOSTS)
