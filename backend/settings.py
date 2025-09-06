@@ -9,11 +9,6 @@ from django.conf import settings
 
 # NUCLEAR OPTION: Disable Django's host validation completely
 import django.core.handlers.wsgi
-
-if os.environ.get('DJANGO_ALLOWED_HOSTS'):
-    ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS').split(',')
-
-
 django.core.handlers.wsgi.WSGIHandler.check_settings = lambda self: None
 
 class DebugHostMiddleware(MiddlewareMixin):
@@ -44,15 +39,39 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 def _split_env(name: str, default: str = ""):
     return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
 
-# ---- Host handling (OPLOSSING 1: Specifieke hosts toegevoegd) ----
-ALLOWED_HOSTS = [
-    "*",  # accepteer alles (tijdelijk)
-    "redflagcheck-new.onrender.com",  # specifieke Render URL
-    "redflagcheck.nl",
-    "www.redflagcheck.nl",
-    "localhost",
-    "127.0.0.1",
-]
+# ---- Host handling (RENDER-SPECIFIEKE FIX) ----
+import socket
+
+def get_render_hosts():
+    """Get all possible Render hostnames"""
+    hosts = ["*"]  # wildcard als fallback
+    
+    # Voeg externe hostname toe
+    if os.getenv('RENDER_EXTERNAL_HOSTNAME'):
+        hosts.append(os.getenv('RENDER_EXTERNAL_HOSTNAME'))
+    
+    # Voeg interne Render hostnames toe
+    try:
+        hostname = socket.gethostname()
+        hosts.append(hostname)
+        # Render gebruikt vaak srv-xxx formaat
+        if hostname.startswith('srv-'):
+            hosts.append(f"{hostname}.onrender.com")
+    except:
+        pass
+        
+    # Voeg bekende hosts toe
+    hosts.extend([
+        "redflagcheck-new.onrender.com",
+        "redflagcheck.nl", 
+        "www.redflagcheck.nl",
+        "localhost",
+        "127.0.0.1"
+    ])
+    
+    return hosts
+
+ALLOWED_HOSTS = get_render_hosts()
 
 USE_X_FORWARDED_HOST = False   # negeer forwarded host
 SECURE_SSL_REDIRECT = False    # voorkom vroegtijdige redirect die get_host triggert
