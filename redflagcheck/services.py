@@ -14,7 +14,7 @@ def generate_followup_questions(intake_data: Dict) -> List[str]:
     context = intake_data.get("context", "")
 
     # Prompt inladen
-    with open(os.path.join(os.path.dirname(__file__), "promt_verdieping.txt"), "r", encoding="utf-8") as f:
+    with open(os.path.join(os.path.dirname(__file__), "prompts/prompt_verdieping.txt"), "r", encoding="utf-8") as f:
         base_prompt = f.read()
 
     # Prompt invullen
