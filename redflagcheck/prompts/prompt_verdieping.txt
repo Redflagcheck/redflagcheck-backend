@@ -20,8 +20,8 @@ Sommige velden kunnen leeg zijn.
 📌 Vragen per categorie:
 
 (1) Situatie of aanleiding
-- Waar ging het gesprek vlak voor dit bericht over?
 - Wat was de aanleiding voor dit bericht?
+- Waar ging het gesprek vlak voor dit bericht over?
 - Wat had jij zelf net daarvoor gezegd of gedaan?
 - Was er een specifieke gebeurtenis eerder die dag?
 - Is er iets voorgevallen waardoor dit bericht kwam?
