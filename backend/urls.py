@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 from django.http import HttpResponse
 from redflagcheck import views
 
+
 urlpatterns = [
     path("admin/", admin.site.urls),
 
@@ -17,7 +18,10 @@ urlpatterns = [
     path("api/intake", views.intake, name="api_intake"),
     path("api/feedback", views.feedback, name="api_feedback"),
     path("api/request_verification", views.request_verification, name="api_request_verification"),
+    path("api/analysis/<uuid:analysis_id>/followup", views.analysis_followup, name="api_analysis_followup"),
+
 ]
 
 # media (alleen lokaal van nut)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

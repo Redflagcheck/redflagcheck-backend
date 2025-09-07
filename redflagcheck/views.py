@@ -1,11 +1,14 @@
 # backend/redflagcheck/views.py
 
 import json
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.timezone import now
-
 from .models import Analysis
+import uuid
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.conf import settings
+from .services import generate_followup_questions, run_ocr_from_url_or_blank
 
 
 @csrf_exempt
@@ -90,3 +93,55 @@ def request_verification(request):
         status=200,
     )
 
+
+
+def _auth_ok(request):
+    auth = request.META.get("HTTP_AUTHORIZATION", "")
+    prefix = "Bearer "
+    if not auth.startswith(prefix):
+        return False
+    token = auth[len(prefix):].strip()
+    expected = getattr(settings, "RFC_API_KEY", None)
+    return expected and token == expected
+
+@require_http_methods(["GET"])
+@csrf_exempt  # we gebruiken Bearer auth; CSRF is niet nodig voor GET
+def analysis_followup(request, analysis_id: str):
+    if not _auth_ok(request):
+        return JsonResponse({"detail": "Unauthorized"}, status=401)
+
+    # Validate UUID
+    try:
+        uuid.UUID(str(analysis_id))
+    except Exception:
+        return JsonResponse({"detail": "Invalid analysis_id"}, status=400)
+
+    try:
+        a = Analysis.objects.get(analysis_id=analysis_id)
+    except Analysis.DoesNotExist:
+        return JsonResponse({"detail": "Not found"}, status=404)
+
+    # Eerste call? Vragen + OCR invullen en status zetten
+    changed = False
+
+    if not a.followup_questions:
+        a.followup_questions = generate_followup_questions(a.data or {})
+        changed = True
+
+    if not a.ocr_text:
+        a.ocr_text = run_ocr_from_url_or_blank(a.data or {})
+        changed = True
+
+    if a.status == "intake":
+        a.status = "followup_pending"
+        changed = True
+
+    if changed:
+        a.save(update_fields=["followup_questions", "ocr_text", "status"])
+
+    return JsonResponse({
+        "analysis_id": str(a.analysis_id),
+        "status": a.status,
+        "questions": a.followup_questions[:2],  # precies 2
+        "ocr_text": a.ocr_text or "",
+    }, status=200)
