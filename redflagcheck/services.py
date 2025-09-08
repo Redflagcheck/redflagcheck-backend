@@ -59,13 +59,46 @@ def generate_followup_questions(intake_data: Dict) -> List[str]:
     return questions
 
 
+
+
 def run_ocr_from_url_or_blank(intake_data: Dict) -> str:
     """
-    Placeholder OCR: als er een screenshot_url staat, return lege string
-    (later echte OCR). Zonder screenshot → ook lege string.
+    OCR via OpenAI GPT-4o op basis van een publiek bereikbare screenshot-URL.
+    Geeft platte tekst terug (zonder extra uitleg), of "" als er niets is/gaat mis.
     """
-    screenshot_url = intake_data.get("screenshot_url") or intake_data.get("screenshot")
-    if screenshot_url:
-        return ""  # later echte OCR-resultaat
-    return ""
+    import os
+    import openai
 
+    screenshot_url = (
+        intake_data.get("screenshot_url")
+        or intake_data.get("screenshot")
+        or intake_data.get("image_url")
+    )
+    if not screenshot_url:
+        return ""
+
+    try:
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+        # Instructie: strikt alleen uitgelezen tekst teruggeven
+        messages = [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Lees ALLE tekst uit deze screenshot. Geef uitsluitend de ruwe tekst, zonder toelichting of formatting."},
+                {"type": "image_url", "image_url": {"url": screenshot_url}}
+            ],
+        }]
+
+        resp = client.chat.completions.create(
+            model="gpt-4o",            # ✅ kwaliteit
+            messages=messages,
+            temperature=0.0,           # OCR moet deterministisch zijn
+            max_tokens=2000,           # ruim, maar veilig
+        )
+
+        text = (resp.choices[0].message.content or "").strip()
+        return text
+    except Exception as e:
+        # Minimal logging; voorkom crash van de flow
+        print(f"[OCR] GPT-4o OCR failed: {e}")
+        return ""
