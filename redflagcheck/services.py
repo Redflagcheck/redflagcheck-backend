@@ -1,7 +1,12 @@
 # backend/redflagcheck/services.py
-import openai
 import os
 from typing import List, Dict
+
+import openai
+import requests        # nieuw
+import base64          # nieuw
+from PIL import Image, ImageOps  # nieuw
+import io              # nieuw
 
 
 def generate_followup_questions(intake_data: Dict) -> List[str]:
@@ -59,16 +64,13 @@ def generate_followup_questions(intake_data: Dict) -> List[str]:
     return questions
 
 
-
-
 def run_ocr_from_url_or_blank(intake_data: Dict) -> str:
     """
-    OCR via OpenAI GPT-4o op basis van een publiek bereikbare screenshot-URL.
-    Geeft platte tekst terug (zonder extra uitleg), of "" als er niets is/gaat mis.
+    Robuuste OCR:
+    - Haal de image server-side op (met User-Agent)
+    - Downscale/comprimeer als 'ie groot is
+    - Stuur als base64 data-URI naar OpenAI (geen hotlink-gedoe)
     """
-    import os
-    import openai
-
     screenshot_url = (
         intake_data.get("screenshot_url")
         or intake_data.get("screenshot")
@@ -78,27 +80,62 @@ def run_ocr_from_url_or_blank(intake_data: Dict) -> str:
         return ""
 
     try:
-        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        # 1) Server-side ophalen (met UA header)
+        UA = {"User-Agent": "RedFlagCheck/1.0"}
+        r = requests.get(screenshot_url, timeout=15, headers=UA)
+        if r.status_code != 200:
+            print(f"[OCR] GET {r.status_code} for {screenshot_url}")
+            return ""
 
-        # Instructie: strikt alleen uitgelezen tekst teruggeven
+        ctype = r.headers.get("Content-Type", "")
+        if not ctype.startswith("image/"):
+            print(f"[OCR] Not an image Content-Type: {ctype}")
+            return ""
+
+        img_bytes = r.content
+
+        # 2) Downscale/compress als te groot (>10 MB)
+        if len(img_bytes) > 10 * 1024 * 1024:
+            try:
+                img = Image.open(io.BytesIO(img_bytes))
+                img = ImageOps.exif_transpose(img)  # respecteer EXIF-rotatie
+                # converteer naar RGB (weg met alpha/indici)
+                if img.mode not in ("RGB", "L"):
+                    img = img.convert("RGB")
+                # begrens langste zijde tot 1600px
+                img.thumbnail((1600, 1600))
+                out = io.BytesIO()
+                img.save(out, format="JPEG", quality=85, optimize=True)
+                img_bytes = out.getvalue()
+                ctype = "image/jpeg"
+                print(f"[OCR] Downscaled to {len(img_bytes)} bytes")
+            except Exception as e:
+                print(f"[OCR] Downscale failed: {e} (using original bytes)")
+
+        # 3) Base64 data-URI bouwen
+        b64 = base64.b64encode(img_bytes).decode("ascii")
+        data_uri = f"data:{ctype};base64,{b64}"
+
+        # 4) GPT-4o aanroepen
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         messages = [{
             "role": "user",
             "content": [
-                {"type": "text", "text": "Lees ALLE tekst uit deze screenshot. Geef uitsluitend de ruwe tekst, zonder toelichting of formatting."},
-                {"type": "image_url", "image_url": {"url": screenshot_url}}
+                {
+                    "type": "text",
+                    "text": "Lees ALLE tekst uit deze screenshot. Geef uitsluitend de ruwe tekst, zonder toelichting of formatting."
+                },
+                {"type": "image_url", "image_url": {"url": data_uri}},
             ],
         }]
-
         resp = client.chat.completions.create(
-            model="gpt-4o",            # ✅ kwaliteit
+            model="gpt-4o",
             messages=messages,
-            temperature=0.0,           # OCR moet deterministisch zijn
-            max_tokens=2000,           # ruim, maar veilig
+            temperature=0.0,
+            max_tokens=2000,
         )
+        return (resp.choices[0].message.content or "").strip()
 
-        text = (resp.choices[0].message.content or "").strip()
-        return text
     except Exception as e:
-        # Minimal logging; voorkom crash van de flow
-        print(f"[OCR] GPT-4o OCR failed: {e}")
+        print(f"[OCR] OCR failed: {e}")
         return ""
