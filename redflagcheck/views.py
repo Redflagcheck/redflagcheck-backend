@@ -104,6 +104,7 @@ def _auth_ok(request):
     expected = getattr(settings, "RFC_API_KEY", None)
     return expected and token == expected
 
+
 @require_http_methods(["GET"])
 @csrf_exempt  # we gebruiken Bearer auth; CSRF is niet nodig voor GET
 def analysis_followup(request, analysis_id: str):
@@ -121,14 +122,22 @@ def analysis_followup(request, analysis_id: str):
     except Analysis.DoesNotExist:
         return JsonResponse({"detail": "Not found"}, status=404)
 
-    # Eerste call? Vragen + OCR invullen en status zetten
     changed = False
+
+    # 🔧 1) Normaliseer de image-key zodat services de juiste key ziet
+    data = a.data or {}
+    img_url = data.get("screenshot_url") or data.get("image_url") or data.get("screenshot")
+    if img_url and not data.get("image_url"):
+        data["image_url"] = img_url
+        a.data = data
+        a.save(update_fields=["data"])  # downstream consistent
 
     if not a.followup_questions:
         a.followup_questions = generate_followup_questions(a.data or {})
         changed = True
 
     if not a.ocr_text:
+        # 🔧 2) OCR opnieuw proberen met genormaliseerde data (nu met 'image_url')
         a.ocr_text = run_ocr_from_url_or_blank(a.data or {})
         changed = True
 
@@ -139,9 +148,11 @@ def analysis_followup(request, analysis_id: str):
     if changed:
         a.save(update_fields=["followup_questions", "ocr_text", "status"])
 
+    # 🔧 3) tijdelijk debugveld meesturen
     return JsonResponse({
         "analysis_id": str(a.analysis_id),
         "status": a.status,
-        "questions": a.followup_questions[:2],  # precies 2
+        "questions": (a.followup_questions or [])[:2],
         "ocr_text": a.ocr_text or "",
+        "debug_image_url": (a.data or {}).get("image_url"),
     }, status=200)
