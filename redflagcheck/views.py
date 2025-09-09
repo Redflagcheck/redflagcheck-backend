@@ -9,6 +9,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from .services import generate_followup_questions
+import logging
+log = logging.getLogger(__name__)
 
 
 @csrf_exempt
@@ -25,6 +27,7 @@ def intake(request):
     # 2) Probeer te schrijven en log exact waarom het eventueel faalt
     try:
         analysis = Analysis.objects.create(data=body)
+        log.info("INTAKE created %s", analysis.analysis_id)
         return JsonResponse({"analysis_id": str(analysis.analysis_id)}, status=201)
     except Exception as e:
         return JsonResponse({"error": "DB write failed", "detail": str(e)}, status=500)
@@ -106,27 +109,30 @@ def _auth_ok(request):
 
 
 @require_http_methods(["GET"])
-@csrf_exempt  # we gebruiken Bearer auth; CSRF is niet nodig voor GET
+@csrf_exempt
 def analysis_followup(request, analysis_id: str):
     if not _auth_ok(request):
         return JsonResponse({"detail": "Unauthorized"}, status=401)
 
-    # Validate UUID
+    # 1) UUID valideren
     try:
         uuid.UUID(str(analysis_id))
     except Exception:
         return JsonResponse({"detail": "Invalid analysis_id"}, status=400)
 
+    log.info("FOLLOWUP hit %s", analysis_id)
+
+    # 2) Record ophalen
     try:
         a = Analysis.objects.get(analysis_id=analysis_id)
     except Analysis.DoesNotExist:
+        log.warning("FOLLOWUP not found %s", analysis_id)
         return JsonResponse({"detail": "Not found"}, status=404)
 
+    # 3) Alleen vragen (geen OCR)
     changed = False
-
     data = a.data or {}
 
-    # Alleen follow-up vragen genereren; geen OCR meer
     if not a.followup_questions:
         a.followup_questions = generate_followup_questions(data)
         changed = True
