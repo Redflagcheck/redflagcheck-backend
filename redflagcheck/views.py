@@ -8,7 +8,7 @@ import uuid
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
-from .services import generate_followup_questions, run_ocr_from_url_or_blank
+from .services import generate_followup_questions
 
 
 @csrf_exempt
@@ -124,21 +124,11 @@ def analysis_followup(request, analysis_id: str):
 
     changed = False
 
-    # 🔧 1) Normaliseer de image-key zodat services de juiste key ziet
     data = a.data or {}
-    img_url = data.get("screenshot_url") or data.get("image_url") or data.get("screenshot")
-    if img_url and not data.get("image_url"):
-        data["image_url"] = img_url
-        a.data = data
-        a.save(update_fields=["data"])  # downstream consistent
 
+    # Alleen follow-up vragen genereren; geen OCR meer
     if not a.followup_questions:
-        a.followup_questions = generate_followup_questions(a.data or {})
-        changed = True
-
-    if not a.ocr_text:
-        # 🔧 2) OCR opnieuw proberen met genormaliseerde data (nu met 'image_url')
-        a.ocr_text = run_ocr_from_url_or_blank(a.data or {})
+        a.followup_questions = generate_followup_questions(data)
         changed = True
 
     if a.status == "intake":
@@ -146,13 +136,10 @@ def analysis_followup(request, analysis_id: str):
         changed = True
 
     if changed:
-        a.save(update_fields=["followup_questions", "ocr_text", "status"])
+        a.save(update_fields=["followup_questions", "status"])
 
-    # 🔧 3) tijdelijk debugveld meesturen
     return JsonResponse({
         "analysis_id": str(a.analysis_id),
         "status": a.status,
         "questions": (a.followup_questions or [])[:2],
-        "ocr_text": a.ocr_text or "",
-        "debug_image_url": (a.data or {}).get("image_url"),
     }, status=200)
