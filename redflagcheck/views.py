@@ -133,15 +133,33 @@ def analysis_followup(request, analysis_id: str):
     data = a.data or {}
 
     if not a.followup_questions:
-        a.followup_questions = generate_followup_questions(data)
+        raw = generate_followup_questions(data)
+
+        # Parse WHY/Q → uniform formaat
+        if isinstance(raw, dict):
+            q1 = raw.get("Q1") or raw.get("q1")
+            q2 = raw.get("Q2") or raw.get("q2")
+            w1 = raw.get("WHY_1") or raw.get("why_1") or raw.get("reason1")
+            w2 = raw.get("WHY_2") or raw.get("why_2") or raw.get("reason2")
+            a.followup_questions = [
+                {"question": q1, "reason": w1},
+                {"question": q2, "reason": w2},
+            ]
+        else:
+            # fallback: service levert al lijst met {question, reason}
+            a.followup_questions = raw
+
+        # ook in data opslaan voor admin/rapport
+        a.data = {**(a.data or {}), "followup_questions": a.followup_questions}
         changed = True
+       
 
     if a.status == "intake":
         a.status = "followup_pending"
         changed = True
 
     if changed:
-        a.save(update_fields=["followup_questions", "status"])
+        a.save()  # zorgt dat óók a.data wordt weggeschreven
 
     return JsonResponse({
         "analysis_id": str(a.analysis_id),
@@ -180,6 +198,8 @@ def analysis_finalize(request, analysis_id: str):
     log.info("FINALIZE saving %s answers=%s", analysis_id, answers)
 
     # Niet in-place muteren → expliciet toewijzen
+   
+
     a.data = {**(a.data or {}), "followup_answers": answers}
 
     # Status robuust doorzetten
