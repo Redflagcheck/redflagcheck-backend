@@ -150,7 +150,7 @@ def analysis_followup(request, analysis_id: str):
             a.followup_questions = raw
 
         # ook in data opslaan voor admin/rapport
-        a.data = {**(a.data or {}), "followup_questions": a.followup_questions}
+        a.data = {**(a.data or {}), "followup_questions_full": a.followup_questions}
         changed = True
        
 
