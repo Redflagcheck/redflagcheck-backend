@@ -149,3 +149,44 @@ def analysis_followup(request, analysis_id: str):
         "status": a.status,
         "questions": (a.followup_questions or [])[:2],
     }, status=200)
+
+
+from django.views.decorators.http import require_http_methods
+
+@require_http_methods(["POST"])
+@csrf_exempt
+def analysis_finalize(request, analysis_id: str):
+    if not _auth_ok(request):
+        return JsonResponse({"detail": "Unauthorized"}, status=401)
+
+    # UUID check
+    try:
+        uuid.UUID(str(analysis_id))
+    except Exception:
+        return JsonResponse({"detail": "Invalid analysis_id"}, status=400)
+
+    # Record ophalen
+    try:
+        a = Analysis.objects.get(analysis_id=analysis_id)
+    except Analysis.DoesNotExist:
+        return JsonResponse({"detail": "Not found"}, status=404)
+
+    # Body lezen
+    try:
+        body = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse({"detail": "Invalid JSON"}, status=400)
+
+    answers = body.get("answers") or {}
+    if not isinstance(answers, dict):
+        return JsonResponse({"detail": "answers must be an object"}, status=400)
+
+    # Opslaan
+    data = a.data or {}
+    data["followup_answers"] = answers
+    a.data = data
+    if a.status == "followup_pending":
+        a.status = "followup_done"
+    a.save(update_fields=["data", "status"])
+
+    return JsonResponse({"ok": True})
