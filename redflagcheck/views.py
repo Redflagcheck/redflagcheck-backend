@@ -200,7 +200,11 @@ def analysis_finalize(request, analysis_id: str):
     # Niet in-place muteren → expliciet toewijzen
    
 
-    a.data = {**(a.data or {}), "followup_answers": answers}
+    a.data = {
+    **(a.data or {}),
+    "followup_questions_full": a.followup_questions,  # vragen + why
+    "followup_answers": answers                      # ingevulde antwoorden
+    }
 
     # Status robuust doorzetten
     if getattr(a, "status", None) in (None, "", "intake", "followup_pending"):
