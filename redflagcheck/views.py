@@ -134,6 +134,7 @@ def analysis_followup(request, analysis_id: str):
 
     if not a.followup_questions:
         raw = generate_followup_questions(data)
+        log.info("FOLLOWUP raw type=%s payload=%s", type(raw).__name__, raw)
 
         # Parse WHY/Q → uniform formaat
         if isinstance(raw, dict):
