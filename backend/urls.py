@@ -14,16 +14,12 @@ urlpatterns = [
     path("", lambda r: HttpResponse("OK"), name="root"),
     path("favicon.ico", lambda r: HttpResponse(status=204)),
 
-    # MVP API endpoints
-    path("api/intake", views.intake, name="api_intake"),
-    path("api/feedback", views.feedback, name="api_feedback"),
-    path("api/request_verification", views.request_verification, name="api_request_verification"),
-    path("api/analysis/<uuid:analysis_id>/followup", views.analysis_followup, name="api_analysis_followup"),
-    path("api/analysis/<uuid:analysis_id>/finalize", views.analysis_finalize, name="api_analysis_finalize"),
+    path("api/analyze", views.analyze, name="api_analyze"),
+    path("api/result/<uuid:analysis_id>", views.result, name="api_result"),
+    path("api/audit_event", views.audit_event, name="api_audit_event"),
 ]
 
 # media (alleen lokaal van nut)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
 
 
