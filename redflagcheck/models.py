@@ -72,10 +72,10 @@ class Analysis(models.Model):
     all_objects = models.Manager()     # inclusief soft-deleted
 
     class Meta:
+        verbose_name = "Analysis"
+        verbose_name_plural = "Analyses"
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["created_at"]),
-            models.Index(fields=["updated_at"]),
             models.Index(fields=["status"]),
             models.Index(fields=["ip_address"]),     # optioneel maar handig voor throttling
             models.Index(fields=["deleted_at"]),     # optioneel voor housekeeping
@@ -134,13 +134,14 @@ class Followup(models.Model):
 
 class AuditEvent(models.Model):
     event_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
+    
     wp_user_id = models.IntegerField(null=True, blank=True, db_index=True)
     type = models.CharField(max_length=64, db_index=True)
     severity = models.CharField(max_length=16, choices=AuditSeverity.choices, default=AuditSeverity.INFO, db_index=True)
     subject_ref = models.CharField(max_length=128, null=True, blank=True)
     payload = models.JSONField(null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
     ip_address = models.CharField(max_length=45, null=True, blank=True)
 
     class Meta:
