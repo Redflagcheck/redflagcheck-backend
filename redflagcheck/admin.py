@@ -3,4 +3,8 @@ from .models import Analysis
 
 @admin.register(Analysis)
 class AnalysisAdmin(admin.ModelAdmin):
-    pass
+    list_display  = ("analysis_id", "status", "created_at", "completed_at")
+    ordering      = ("-created_at",)
+    list_filter   = ("status", "created_at", "completed_at")
+    search_fields = ("analysis_id", "email", "input_text")
+    date_hierarchy = "created_at"
