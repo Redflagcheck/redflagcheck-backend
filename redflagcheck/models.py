@@ -128,9 +128,10 @@ class Followup(models.Model):
             # NB: (analysis, position) is al gedekt door de UNIQUE-constraint
         ]
 
-    def __str__(self):
-        return f"Followup(A={self.analysis_id}, pos={self.position})"
 
+    def __str__(self):
+        # was: return f"Followup(A={self.analysis_id}, pos={self.position})"
+        return f"Followup(A={self.analysis.analysis_id}, pos={self.position})"
 
 class AuditEvent(models.Model):
     event_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
