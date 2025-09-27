@@ -254,3 +254,37 @@ def audit_event(request):
         ip_address=_client_ip(request),
     )
     return _ok({"ok": True}, 201)
+
+
+@csrf_exempt
+def analysis_detail(request, analysis_id: str):
+    if request.method == "OPTIONS":
+        return _ok({"ok": True})
+    if request.method != "GET":
+        return _cors(HttpResponseNotAllowed(["GET", "OPTIONS"]))
+    if not _auth_ok(request):
+        return _bad("Unauthorized", 401)
+
+    try:
+        a = Analysis.objects.get(analysis_id=uuid.UUID(str(analysis_id)))
+    except (ValueError, Analysis.DoesNotExist):
+        return _bad("Not found", 404)
+
+    followups = [
+        {
+            "position": fu.position,
+            "question": fu.question_text,
+            "why": fu.why,
+            "answer": fu.answer_text or "",
+        }
+        for fu in a.followups.order_by("position")
+    ]
+
+    return _ok({
+        "analysis_id": str(a.analysis_id),
+        "status": a.status,
+        "round": a.round,
+        "input_text": a.input_text,
+        "mood_score": a.mood_score,
+        "questions": followups,  # altijd aanwezig (kan leeg zijn)
+    })
