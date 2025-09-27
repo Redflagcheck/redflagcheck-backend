@@ -203,6 +203,41 @@ def analyze(request):
         "result": {"text": a.result_text, "html": a.result_html, "json": a.result_json},
     })
 
+@csrf_exempt
+def analysis_update(request, analysis_id: str):
+    if request.method == "OPTIONS":
+        return _ok({"ok": True})
+    if request.method != "POST":
+        return _cors(HttpResponseNotAllowed(["POST", "OPTIONS"]))
+    if not _auth_ok(request):
+        return _bad("Unauthorized", 401)
+
+    body = _parse_json(request)
+    if body is None:
+        return _bad("Invalid JSON")
+
+    try:
+        a = Analysis.objects.get(analysis_id=uuid.UUID(str(analysis_id)))
+    except (ValueError, Analysis.DoesNotExist):
+        return _bad("Not found", 404)
+
+    updated = {}
+    if "name" in body:
+        a.name = (body.get("name") or "").strip() or None
+        updated["name"] = a.name
+    if "context" in body:
+        a.context = (body.get("context") or "").strip() or None
+        updated["context"] = a.context
+    if "email" in body:
+        a.email = (body.get("email") or "").strip() or None
+        updated["email"] = a.email
+
+    if updated:
+        a.save(update_fields=list(updated.keys()) + ["updated_at"])
+
+    return _ok({"analysis_id": str(a.analysis_id), "updated": updated})
+
+
 
 @csrf_exempt
 def result(request, analysis_id: str):

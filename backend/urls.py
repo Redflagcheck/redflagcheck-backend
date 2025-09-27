@@ -15,6 +15,8 @@ urlpatterns = [
     path("favicon.ico", lambda r: HttpResponse(status=204)),
 
     path("api/analyze", views.analyze, name="api_analyze"),
+    path("api/analysis/<uuid:analysis_id>/update", views.analysis_update, name="analysis-update"),
+
     path("api/result/<uuid:analysis_id>", views.result, name="api_result"),
     path("api/audit_event", views.audit_event, name="api_audit_event"),
     path("api/analysis/<uuid:analysis_id>", views.analysis_detail, name="analysis-detail"),
