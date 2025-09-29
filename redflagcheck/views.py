@@ -6,6 +6,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.db import transaction
 from .models import Analysis, Followup, AuditEvent, AnalysisStatus, AuditSeverity
+from .services import generate_followup_questions
+
 
 API_KEY = os.getenv("API_SHARED_SECRET")  # zet in Render env vars
 ALLOWED_ORIGIN = os.getenv("CORS_ALLOWED_ORIGIN")  # bv. https://redflagcheck.nl
@@ -40,13 +42,7 @@ def _client_ip(request) -> str | None:
     return ip
 
 
-# ---- simpele “GPT” stubs (geen OCR) ----
-def _gen_questions(input_text: str, mood_score: int | None):
-    # Twee voorbeeldvragen met WHY. Pas later aan naar echte model-call.
-    return [
-        (1, "Wat gaf jou precies dit gevoel?", "Helpt de trigger en context scherp te krijgen."),
-        (2, "Wat verwacht je dat hij doet in de komende week?", "Maakt intenties concreet en toetsbaar."),
-    ]
+
 
 def _final_analysis_text_html_json(input_text: str, answers: dict, mood_score: int | None):
     # Minimalistische eindanalyse zonder OCR/GPT.
@@ -121,18 +117,22 @@ def analyze(request):
                 ip_address=ip,
             )
 
-            questions = _gen_questions(a.input_text, a.mood_score)
+            questions = generate_followup_questions({
+            "text": a.input_text,
+            "mood": a.mood_score,
+            "context": a.context,
+            })
             out = []
-            for pos, q, why in questions:
+            for idx, q in enumerate(questions, start=1):
                 Followup.objects.create(
                     analysis=a,
-                    position=pos,
-                    question_text=q,
-                    why=why,
+                    position=idx,
+                    question_text=q["question"],
+                    why=q["why"],
                     answer_text="",  # wordt later ingevuld bij finalize
-                    model_version="stub-v1",
+                    model_version="gpt-v1",
                 )
-                out.append({"position": pos, "question": q, "why": why})
+                out.append({"position": idx, "question": q["question"], "why": q["why"]})
 
             AuditEvent.objects.create(
                 wp_user_id=wp_user_id,

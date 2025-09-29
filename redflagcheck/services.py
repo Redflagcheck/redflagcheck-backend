@@ -1,15 +1,13 @@
 # backend/redflagcheck/services.py
 
 import os
+import openai
 from typing import List, Dict
 
-import openai
-
-
-def generate_followup_questions(intake_data: Dict) -> List[str]:
+def generate_followup_questions(intake_data: Dict) -> List[Dict[str, str]]:
     """
     Genereert 2 verdiepende vragen met uitleg, op basis van intake_data.
-    Gebruikt losse messages i.p.v. één string.
+    Output = [{"question": "...", "why": "..."}, {"question": "...", "why": "..."}]
     """
     bericht = intake_data.get("text", "")
     mood = intake_data.get("mood", "")
@@ -38,24 +36,31 @@ def generate_followup_questions(intake_data: Dict) -> List[str]:
 
     output = resp.choices[0].message.content.strip()
 
-    # Verwachte format:
+    # Verwacht format:
     # WHY_1: ...
     # Q1: ...
     # WHY_2: ...
     # Q2: ...
 
-    questions: List[str] = []
+    why1, q1, why2, q2 = "", "", "", ""
     for line in output.splitlines():
-        if line.startswith("Q1:"):
-            questions.append(line.replace("Q1:", "").strip())
+        if line.startswith("WHY_1:"):
+            why1 = line.replace("WHY_1:", "").strip()
+        elif line.startswith("Q1:"):
+            q1 = line.replace("Q1:", "").strip()
+        elif line.startswith("WHY_2:"):
+            why2 = line.replace("WHY_2:", "").strip()
         elif line.startswith("Q2:"):
-            questions.append(line.replace("Q2:", "").strip())
+            q2 = line.replace("Q2:", "").strip()
 
-    # Altijd 2 vragen teruggeven (anders fallback)
-    if len(questions) < 2:
-        questions = [
-            "Wat was de aanleiding voor dit bericht?",
-            "Hoe zou jij jullie contact nu omschrijven?",
+    # Fallback als GPT niet goed antwoordt
+    if not q1 or not q2:
+        return [
+            {"question": "Wat was de aanleiding voor dit bericht?", "why": "Helpt de context en trigger scherp te krijgen."},
+            {"question": "Hoe zou jij jullie contact nu omschrijven?", "why": "Geeft duidelijkheid over de relatie en verwachtingen."},
         ]
 
-    return questions
+    return [
+        {"question": q1, "why": why1},
+        {"question": q2, "why": why2},
+    ]
