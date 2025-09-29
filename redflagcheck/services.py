@@ -115,6 +115,7 @@ Gebruik uitsluitend dit format. Geen advies, analyse of extra uitleg.
 
     why1, q1, why2, q2 = "", "", "", ""
     for line in output.splitlines():
+        line = line.strip()
         if line.startswith("WHY_1:"):
             why1 = line.replace("WHY_1:", "").strip()
         elif line.startswith("Q1:"):
