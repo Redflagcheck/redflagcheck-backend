@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.db import transaction
 from .models import Analysis, Followup, AuditEvent, AnalysisStatus, AuditSeverity
 from .services import generate_followup_questions, generate_final_analysis
+from django.utils.html import escape as esc
+
 
 
 API_KEY = os.getenv("API_SHARED_SECRET")  # zet in Render env vars
@@ -242,9 +244,46 @@ def analyze(request):
         # 4. GPT-eindanalyse uitvoeren
         final_text = generate_final_analysis(analysis_data)
 
-        # 5. Opslaan in Analysis
+        # 5. Opslaan in Analysis met nette HTML-template (zonder OCR)
+        orig_msg = esc(a.input_text or "")
+        user_ctx = esc(a.context or "")
+        q1 = esc(f1.question_text) if f1 else ""
+        a1 = esc(f1.answer_text) if f1 else ""
+        q2 = esc(f2.question_text) if f2 else ""
+        a2 = esc(f2.answer_text) if f2 else ""
+
+        result_html = f"""
+        <h3>Samenvatting van jouw ingevulde gegevens:</h3>
+
+        <p><b>📩 Origineel bericht:</b><br>
+        {orig_msg}</p>
+
+        <p><b>📝 Context:</b><br>
+        {user_ctx or "(geen context opgegeven)"}</p>
+
+        <p><b>Vraag 1:</b> {q1}<br>
+        <b>Jouw antwoord:</b> {a1}</p>
+
+        <p><b>Vraag 2:</b> {q2}<br>
+        <b>Jouw antwoord:</b> {a2}</p>
+
+        <hr>
+        <section class="rfc-analysis">
+        <h3 style="margin:0 0 8px;">🔎 Analyse door RedFlagCheck AI</h3>
+        <div style="white-space: pre-wrap; line-height: 1.5;">{esc(final_text)}</div>
+        </section>
+
+        <hr>
+        <p>👉 <em>Wil je zijn gedrag écht doorgronden? Vraag de Dark Mode Analyse aan en ontdek zijn diepste patronen.</em></p>
+        <p>
+        <span class="muted">💭 Let op: deze analyse is een AI-inschatting en geen psychologisch of juridisch oordeel.<br>
+        ❗Deze analyse is bedoeld als hulpmiddel bij het inschatten van risico’s en intenties, maar kan menselijke intuïtie niet vervangen.</span>
+        </p>
+        <p>Heb je feedback of vragen? Mail gerust naar <a href="mailto:info@redflagcheck.nl">info@redflagcheck.nl</a>.</p>
+        """
+
         a.result_text = final_text
-        a.result_html = f"<section class='rfc-analysis'><pre>{final_text}</pre></section>"
+        a.result_html = result_html
         a.result_json = {"text": final_text}
         a.status = AnalysisStatus.COMPLETED
         a.completed_at = timezone.now()
