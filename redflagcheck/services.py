@@ -199,7 +199,7 @@ Antwoord van de gebruiker:
 ⚠️ Outputregels:
 - Gebruik uitsluitend correcte HTML-tags (geen Markdown).
 - Gebruik <b>, <i>, <ul>, <li>, <p>, <h3> enz. voor opmaak.
-- Zet elk onderdeel in een apart <p> of <div>.
+- Zet elk onderdeel in een apart <p>.
 - Geef GEEN tekst buiten HTML-tags.
 - Gebruik géén <pre>.
 
