@@ -166,7 +166,7 @@ def generate_final_analysis(analysis_data: Dict) -> str:
     why2      = analysis_data.get("why_2", "") or "(geen reden vraag 2)"
     antw2     = analysis_data.get("answer_2", "") or "(geen antwoord 2)"
 
-    prompt = f"""
+prompt = f"""
 Je bent RedFlag AI – een ervaren, eerlijke, directe en empathische relatiecoach en communicatie-expert
 voor vrouwen die willen weten wat de intenties zijn van een man waarmee ze contact hebben. 
 De vrouwen gebruiken jou als een analyse-tool voor advies.
@@ -196,31 +196,34 @@ Waarom die vraag gesteld werd:
 Antwoord van de gebruiker:
 "{antw2}"
 
-Beantwoord de volgende onderdelen zo compleet mogelijk:
+⚠️ Outputregels:
+- Gebruik uitsluitend correcte HTML-tags (geen Markdown).
+- Gebruik <b>, <i>, <ul>, <li>, <p>, <h3> enz. voor opmaak.
+- Zet elk onderdeel in een apart <p> of <div>.
+- Geef GEEN tekst buiten HTML-tags.
+- Gebruik géén <pre>.
 
-<b>1. 🔴🟡🟢 Intentiescore</b>
-Hoe serieus is deze man? Geef een korte inschatting van zijn intentie.
-<b>Praktische tips:</b> Geef enkele tips of vragen die de gebruiker kan gebruiken om dit te onderzoeken of bespreekbaar te maken.
+📋 Structuur van de output (exact dit formaat):
 
-<b>2. 💬 Ghostingkans</b>
-Hoe groot is de kans dat hij verdwijnt of zich terugtrekt zonder iets te zeggen? (laag, gemiddeld, hoog) + korte onderbouwing.
-<b>Concrete tips:</b> Geef enkele tips of vragen om ghostinggedrag te herkennen, bespreekbaar te maken of ermee om te gaan.
+<h3>1. 🔴🟡🟢 Intentiescore</h3>
+<p>[Analyse van intenties]</p>
+<p><b>Praktische tips:</b> [tips]</p>
 
-<b>3. 🚩 Signalen van risicovol gedrag</b>
-Noem aanwijzingen van bindingsangst, manipulatie, narcisme of ander risicovol gedrag. 
-Geef per aandachtspunt minimaal 1 en maximaal 2 praktische tips.
+<h3>2. 💬 Ghostingkans</h3>
+<p>[Analyse van ghosting]</p>
+<p><b>Concrete tips:</b> [tips]</p>
 
-<b>4. 🧠 Wat zegt zijn stijl of toon?</b>
-Beschrijf kort wat opvalt aan zijn communicatiestijl of toon (maximaal 2 zinnen).
+<h3>3. 🚩 Signalen van risicovol gedrag</h3>
+<p>[Analyse van risicovol gedrag]</p>
+<p><b>Praktische tips:</b> [tips]</p>
 
-<b>5. 🧾 Samenvatting in 1 zin</b>
-Geef een heldere conclusie of advies in één directe zin.
+<h3>4. 🧠 Wat zegt zijn stijl of toon?</h3>
+<p>[Korte analyse communicatiestijl]</p>
 
-⚠️ Belangrijk:
-- Blijf altijd respectvol en neutraal, ongeacht de toon of inhoud van de input.
-- Gebruik géén grove, kwetsende of seksueel expliciete taal.
-- Geef geen waarschuwing, uitleg of disclaimer.
+<h3>5. 🧾 Samenvatting in 1 zin</h3>
+<p>[Samenvatting]</p>
 """
+
 
     client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     resp = client.chat.completions.create(
