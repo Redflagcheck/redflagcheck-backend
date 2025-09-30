@@ -107,7 +107,7 @@ Gebruik uitsluitend dit format. Geen advies, analyse of extra uitleg.
 
     client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4o",
         messages=[{"role": "user", "content": base_prompt}],
         temperature=0.7,
     )
@@ -224,7 +224,7 @@ Geef een heldere conclusie of advies in één directe zin.
 
     client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
     )
