@@ -4,6 +4,7 @@ import os
 import openai
 from typing import List, Dict
 
+
 def generate_followup_questions(intake_data: Dict) -> List[Dict[str, str]]:
     """
     Genereert 2 verdiepende vragen met uitleg, op basis van intake_data.
@@ -135,3 +136,98 @@ Gebruik uitsluitend dit format. Geen advies, analyse of extra uitleg.
         {"question": q1, "why": why1},
         {"question": q2, "why": why2},
     ]
+
+
+# backend/redflagcheck/services.py
+
+import os
+import openai
+from typing import Dict
+
+def generate_final_analysis(analysis_data: Dict) -> str:
+    """
+    Roept GPT aan om een volledige eindanalyse te genereren op basis van alle inputvelden.
+    Verwacht keys:
+      - text
+      - context
+      - mood
+      - followup_q1, why_1, answer_1
+      - followup_q2, why_2, answer_2
+    Return: plain tekst (GPT-output)
+    """
+
+    bericht   = analysis_data.get("text", "") or "(geen bericht)"
+    context   = analysis_data.get("context", "") or "(geen context)"
+    mood      = analysis_data.get("mood", "") or "(geen mood-score)"
+    vraag1    = analysis_data.get("followup_q1", "") or "(geen vraag 1)"
+    why1      = analysis_data.get("why_1", "") or "(geen reden vraag 1)"
+    antw1     = analysis_data.get("answer_1", "") or "(geen antwoord 1)"
+    vraag2    = analysis_data.get("followup_q2", "") or "(geen vraag 2)"
+    why2      = analysis_data.get("why_2", "") or "(geen reden vraag 2)"
+    antw2     = analysis_data.get("answer_2", "") or "(geen antwoord 2)"
+
+    prompt = f"""
+Je bent RedFlag AI – een ervaren, eerlijke, directe en empathische relatiecoach en communicatie-expert
+voor vrouwen die willen weten wat de intenties zijn van een man waarmee ze contact hebben. 
+De vrouwen gebruiken jou als een analyse-tool voor advies.
+
+Analyseer het onderstaande bericht, de gegeven context én de antwoorden van de gebruiker op twee verdiepende vragen:
+---
+Bericht van de man:
+"{bericht}"
+
+Mood (1=boos, 2=neutraal, 3=blij):
+"{mood}"
+
+Context / aanvullende informatie van de gebruiker (optioneel):
+"{context}"
+
+Verdiepende vraag 1:
+"{vraag1}"
+Waarom die vraag gesteld werd:
+"{why1}"
+Antwoord van de gebruiker:
+"{antw1}"
+
+Verdiepende vraag 2:
+"{vraag2}"
+Waarom die vraag gesteld werd:
+"{why2}"
+Antwoord van de gebruiker:
+"{antw2}"
+
+Beantwoord de volgende onderdelen zo compleet mogelijk:
+
+<b>1. 🔴🟡🟢 Intentiescore</b>
+Hoe serieus is deze man? Geef een korte inschatting van zijn intentie.
+<b>Praktische tips:</b> Geef enkele tips of vragen die de gebruiker kan gebruiken om dit te onderzoeken of bespreekbaar te maken.
+
+<b>2. 💬 Ghostingkans</b>
+Hoe groot is de kans dat hij verdwijnt of zich terugtrekt zonder iets te zeggen? (laag, gemiddeld, hoog) + korte onderbouwing.
+<b>Concrete tips:</b> Geef enkele tips of vragen om ghostinggedrag te herkennen, bespreekbaar te maken of ermee om te gaan.
+
+<b>3. 🚩 Signalen van risicovol gedrag</b>
+Noem aanwijzingen van bindingsangst, manipulatie, narcisme of ander risicovol gedrag. 
+Geef per aandachtspunt minimaal 1 en maximaal 2 praktische tips.
+
+<b>4. 🧠 Wat zegt zijn stijl of toon?</b>
+Beschrijf kort wat opvalt aan zijn communicatiestijl of toon (maximaal 2 zinnen).
+
+<b>5. 🧾 Samenvatting in 1 zin</b>
+Geef een heldere conclusie of advies in één directe zin.
+
+⚠️ Belangrijk:
+- Blijf altijd respectvol en neutraal, ongeacht de toon of inhoud van de input.
+- Gebruik géén grove, kwetsende of seksueel expliciete taal.
+- Geef geen waarschuwing, uitleg of disclaimer.
+"""
+
+    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
+
+    output = resp.choices[0].message.content.strip()
+    return output
