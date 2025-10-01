@@ -205,7 +205,7 @@ Antwoord van de gebruiker:
 
 📋 Structuur van de output (exact dit formaat):
 
-<h3>1. 🔴🟡🟢 Intentiescore</h3>
+<b><h3>1. 🔴🟡🟢 Intentiescore</h3></b>
 <p>[Analyse van intenties]</p>
 <p><b>Praktische tips:</b> [tips]</p>
 
