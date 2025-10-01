@@ -209,18 +209,18 @@ Antwoord van de gebruiker:
 <p>[Analyse van intenties]</p>
 <p><b>Praktische tips:</b> [tips]</p>
 
-<h3>2. 💬 Ghostingkans</h3>
+<h3><b>2. 💬 Ghostingkans</b></h3>
 <p>[Analyse van ghosting]</p>
 <p><b>Concrete tips:</b> [tips]</p>
 
-<h3>3. 🚩 Signalen van risicovol gedrag</h3>
+<h3><b>3. 🚩 Signalen van risicovol gedrag</b></h3>
 <p>[Analyse van risicovol gedrag]</p>
 <p><b>Praktische tips:</b> [tips]</p>
 
-<h3>4. 🧠 Wat zegt zijn stijl of toon?</h3>
+<h3><b>4. 🧠 Wat zegt zijn stijl of toon?</b></h3>
 <p>[Korte analyse communicatiestijl]</p>
 
-<h3>5. 🧾 Samenvatting in 1 zin</h3>
+<h3><b>5. 🧾 Samenvatting in 1 zin</b></h3>
 <p>[Samenvatting]</p>
 """
 

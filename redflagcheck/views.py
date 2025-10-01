@@ -269,7 +269,7 @@ def analyze(request):
 
         <hr>
         <section class="rfc-analysis">
-        <h3 style="margin:0 0 8px;">🔎 Analyse door RedFlagCheck AI</h3>
+        <h3 style="margin:0 0 8px;"><b>🔎 Analyse door RedFlagCheck AI</b></h3>
         <div style="white-space: normal; line-height: 1.6;">{final_text}</div> 
         </section>
 
