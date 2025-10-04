@@ -14,7 +14,6 @@ def generate_followup_questions(intake_data: Dict) -> List[Dict[str, str]]:
     mood = intake_data.get("mood", "")
     context = intake_data.get("context", "") or "(geen extra context)"
 
-    # Prompttekst dynamisch opbouwen
     base_prompt = f"""
 Je bent RedFlag AI – een ervaren, eerlijke, directe en empathische relatie- en communicatiecoach voor vrouwen van 18-40 jaar die willen weten wat de intenties zijn van een man waarmee ze contact hebben. De vrouwen gebruiken jou als analyse-tool voor advies.
 
@@ -138,12 +137,6 @@ Gebruik uitsluitend dit format. Geen advies, analyse of extra uitleg.
     ]
 
 
-# backend/redflagcheck/services.py
-
-import os
-import openai
-from typing import Dict
-
 def generate_final_analysis(analysis_data: Dict) -> str:
     """
     Roept GPT aan om een volledige eindanalyse te genereren op basis van alle inputvelden.
@@ -153,9 +146,8 @@ def generate_final_analysis(analysis_data: Dict) -> str:
       - mood
       - followup_q1, why_1, answer_1
       - followup_q2, why_2, answer_2
-    Return: plain tekst (GPT-output)
+    Return: PURE HTML string (geen markdown, geen code fences)
     """
-
     bericht   = analysis_data.get("text", "") or "(geen bericht)"
     context   = analysis_data.get("context", "") or "(geen context)"
     mood      = analysis_data.get("mood", "") or "(geen mood-score)"
@@ -197,11 +189,12 @@ Antwoord van de gebruiker:
 "{antw2}"
 
 ⚠️ Outputregels:
-- Gebruik uitsluitend correcte HTML-tags (geen Markdown).
+- Alleen PURE HTML teruggeven.
+- GEEN Markdown, GEEN code fences, GEEN ``` of ```html.
 - Gebruik <b>, <i>, <ul>, <li>, <p>, <h3> enz. voor opmaak.
 - Zet elk onderdeel in een apart <p>.
+- GEEN <pre>.
 - Geef GEEN tekst buiten HTML-tags.
-- Gebruik géén <pre>.
 
 📋 Structuur van de output (exact dit formaat):
 
@@ -224,7 +217,6 @@ Antwoord van de gebruiker:
 <p>[Samenvatting]</p>
 """
 
-
     client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     resp = client.chat.completions.create(
         model="gpt-4o",
@@ -233,4 +225,28 @@ Antwoord van de gebruiker:
     )
 
     output = resp.choices[0].message.content.strip()
+
+    # --- Robuust codefence-strippen (als het model toch ``` zet) ---
+    s = output.lstrip()
+    if s.startswith("```"):
+        lines = s.splitlines()
+        # verwijder eerste fence-regel (``` of ```html)
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        # verwijder laatste fence-regel als aanwezig
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        output = "\n".join(lines).strip()
+
+    # Soms zet het model de backticks letterlijk in <p>…</p>
+    output = (
+        output
+        .replace("<p>```html</p>", "")
+        .replace("<p>```HTML</p>", "")
+        .replace("<p>```</p>", "")
+        .strip()
+    )
+
     return output
+
+
