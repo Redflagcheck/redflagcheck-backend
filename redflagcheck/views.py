@@ -251,12 +251,19 @@ def analyze(request):
         a1 = esc(f1.answer_text) if f1 else ""
         q2 = esc(f2.question_text) if f2 else ""
         a2 = esc(f2.answer_text) if f2 else ""
+        mood_raw = a.mood_score
+        mood_map = {1: "Boos", 2: "Neutraal", 3: "Blij", "1": "Boos", "2": "Neutraal", "3": "Blij"}
+        mood_display = mood_map.get(mood_raw, str(mood_raw) if mood_raw not in (None, "") else "(geen mood)")
+        mood_html = esc(mood_display)
 
         result_html = f"""
         <h3>Samenvatting van jouw ingevulde gegevens:</h3>
 
         <p><b>📩 Origineel bericht:</b><br>
         {orig_msg}</p>
+
+        <p><b>😶 Gemoedstoestand (mood):</b><br>
+        {mood_html}</p>
 
         <p><b>📝 Context:</b><br>
         {user_ctx or "(geen context opgegeven)"}</p>
