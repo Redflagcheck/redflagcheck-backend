@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Analysis
+from .models import Analysis, Followup
 
 @admin.register(Analysis)
 class AnalysisAdmin(admin.ModelAdmin):
