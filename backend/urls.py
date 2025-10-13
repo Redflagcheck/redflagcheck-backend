@@ -20,6 +20,7 @@ urlpatterns = [
     path("api/result/<uuid:analysis_id>", views.result, name="api_result"),
     path("api/audit_event", views.audit_event, name="api_audit_event"),
     path("api/analysis/<uuid:analysis_id>", views.analysis_detail, name="analysis-detail"),
+    path("api/feedback", views.feedback),
 
 ]
 

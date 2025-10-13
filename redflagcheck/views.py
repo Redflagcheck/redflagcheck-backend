@@ -434,4 +434,39 @@ def analysis_detail(request, analysis_id: str):
         "questions": followups,  # altijd aanwezig (kan leeg zijn)
     })
 
+@csrf_exempt
+def feedback(request):
+    if request.method == "OPTIONS":
+        return _ok({"ok": True})
+    if request.method != "POST":
+        return _cors(HttpResponseNotAllowed(["POST", "OPTIONS"]))
+    if not _auth_ok(request):
+        return _bad("Unauthorized", 401)
 
+    body = _parse_json(request)
+    if body is None:
+        return _bad("Invalid JSON")
+
+    analysis_id = body.get("analysis_id")
+    rating = body.get("rating")
+    feedback_text = (body.get("feedback_text") or "").strip()
+
+    if not analysis_id or rating is None:
+        return _bad("analysis_id and rating are required")
+
+    try:
+        a = Analysis.objects.get(analysis_id=uuid.UUID(str(analysis_id)))
+    except (ValueError, Analysis.DoesNotExist):
+        return _bad("analysis_id not found", 404)
+
+    # Eventueel opslaan in AuditEvent of apart Feedback-model
+    AuditEvent.objects.create(
+        wp_user_id=a.wp_user_id,
+        type="feedback_received",
+        severity=AuditSeverity.INFO,
+        subject_ref=str(a.analysis_id),
+        payload={"rating": rating, "feedback_text": feedback_text},
+        ip_address=_client_ip(request),
+    )
+
+    return _ok({"ok": True, "message": "Feedback opgeslagen"}, 201)
