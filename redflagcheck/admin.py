@@ -8,3 +8,10 @@ class AnalysisAdmin(admin.ModelAdmin):
     list_filter   = ("status", "created_at", "completed_at")
     search_fields = ("analysis_id", "email", "input_text")
     date_hierarchy = "created_at"
+
+
+@admin.register(Followup)
+class FollowupAdmin(admin.ModelAdmin):
+    list_display = ("analysis", "position", "question_text", "answer_text")
+    search_fields = ("question_text", "answer_text")
+    list_filter = ("model_version",)
