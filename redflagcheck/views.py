@@ -434,6 +434,7 @@ def analysis_detail(request, analysis_id: str):
         "questions": followups,  # altijd aanwezig (kan leeg zijn)
     })
 
+
 @csrf_exempt
 def feedback(request):
     if request.method == "OPTIONS":
@@ -459,7 +460,13 @@ def feedback(request):
     except (ValueError, Analysis.DoesNotExist):
         return _bad("analysis_id not found", 404)
 
-    # Eventueel opslaan in AuditEvent of apart Feedback-model
+    # 1️⃣ Feedback opslaan in Analysis zelf
+    a.rating = rating
+    a.feedback_text = feedback_text
+    a.rated_at = timezone.now()
+    a.save(update_fields=["rating", "feedback_text", "rated_at", "updated_at"])
+
+    # 2️⃣ AuditEvent loggen
     AuditEvent.objects.create(
         wp_user_id=a.wp_user_id,
         type="feedback_received",
@@ -469,4 +476,11 @@ def feedback(request):
         ip_address=_client_ip(request),
     )
 
-    return _ok({"ok": True, "message": "Feedback opgeslagen"}, 201)
+    return _ok({
+        "ok": True,
+        "message": "Feedback opgeslagen",
+        "analysis_id": str(a.analysis_id),
+        "rating": rating,
+        "feedback_text": feedback_text,
+    }, 201)
+
